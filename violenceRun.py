@@ -1,10 +1,10 @@
 import tensorflow.keras as keras
 import os
 from itertools import chain
-
+import h5py
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback, ModelCheckpoint
 from keras.optimizers import RMSprop, Adam
-
+from keras.models import load_model
 import pandas as pd
 from keras.applications import Xception, ResNet50, InceptionV3, MobileNet, VGG19, DenseNet121, InceptionResNetV2, VGG16
 from keras.layers import LSTM, ConvLSTM2D
@@ -43,17 +43,21 @@ def train_eval_network(dataset_name, train_gen, validate_gen, test_gen, seq_len,
                   learning_rate=learning_rate, batch_size=batch_size, dropout=dropout,
                   optimizer=optimizer[0].__name__, initial_weights=initial_weights, seq_len=seq_len)
     print("run experimnt " + str(result))
-    model = BuildModel_basic.build(size=size, seq_len=seq_len, learning_rate=learning_rate,
+    model = None
+    bestModelPath = '/gdrive/My Drive/THESIS/Data/' + str(dataset_name) + '_poseGatedNetBestModel.h5'
+    if use_new_model :
+    	model = BuildModel_basic.build(size=size, seq_len=seq_len, learning_rate=learning_rate,
                                    optimizer_class=optimizer, initial_weights=initial_weights,
                                    cnn_class=cnn_arch, pre_weights=pre_weights, lstm_conf=lstm_conf,
                                    cnn_train_type=cnn_train_type, dropout=dropout, classes=classes)
+    else:    
+	model = load_model(bestModelPath)
 
     # the network is trained on data generatores and apply the callacks when the validation loss is not improving:
     # 1. early stop to training after n iteration
     # 2. reducing the learning rate after k iteration where k< n
     test_history = TestCallback(test_gen=test_gen,test_steps= (int(len_test/batch_size)) )
     
-    bestModelPath = '/gdrive/My Drive/THESIS/Data/' + str(dataset_name) + '_poseGatedNetBestModel.h5'
     modelcheckpoint = ModelCheckpoint(bestModelPath, monitor='loss', verbose=1, save_best_only=True, mode='auto', period=1)    
 
     history = model.fit_generator(
@@ -263,8 +267,8 @@ crop_dark = dict(
     movies=None
 )
 
-datasets_frames = "data/raw_frames"
-datasets_poses = "data/raw_poses"
+datasets_frames = "/gdrive/My Drive/THESIS/Data/data/raw_frames"
+datasets_poses = "/gdrive/My Drive/THESIS/Data/data/raw_poses"
 res_path = "/gdrive/My Drive/THESIS/Data/data/results"
 figure_size = 244
 # split_ratio = 0.1
@@ -317,10 +321,12 @@ else:
 
 import pickle
 ###### use fresh data = False when we have raw frames ready for us
-use_fresh_data = False # SET USE_FRESH_DATA HERE!
+use_fresh_data = True # SET USE_FRESH_DATA HERE!
 ######
-test_data_integrity_flag = False
-
+test_data_integrity_flag = True
+######
+use_new_model = False #normally it would be false
+######
 
 e = None
 if use_fresh_data == True:
@@ -348,7 +354,7 @@ for dataset_name, dataset_videos in datasets_videos.items():
     print('finish training data preparation for',dataset_name)
         
     
-    #continue #debug
+    continue #debug
     result = train_eval_network(epochs=1, dataset_name=dataset_name, train_gen=train_gen, validate_gen=validate_gen,
                                 test_gen = test_gen, seq_len=seq_len, batch_size=batch_size,
                                 batch_epoch_ratio=0.5, initial_weights=initial_weights, size=figure_size,
