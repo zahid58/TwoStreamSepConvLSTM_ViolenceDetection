@@ -1,0 +1,521 @@
+HOCKEY DATASET _ EPOCH 2 _ poseGatedNet using mobilenetsV2
+
+Total params: 19,189,629
+Trainable params: 19,120,893
+Non-trainable params: 68,736
+__________________________________________________________________________________________________
+None
+Epoch 1/2
+320/320 [==============================] - 11122s 35s/step - loss: 0.6815 - acc: 0.5555 - val_loss: 1.7518 - val_acc: 0.5312
+50/50 [==============================] - 589s 12s/step
+
+Testing loss: 1.7393388056010008, acc: 0.52
+
+
+Epoch 00001: loss improved from inf to 0.68154, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 2/2
+226/320 [====================>.........] - ETA: 51:57 - loss: 0.6851 - acc: 0.6040
+
+
+----------------
+got the model!
+Epoch 1/10
+2020-04-06 19:14:16.045734: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcublas.so.10.0
+2020-04-06 19:14:16.362501: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcudnn.so.7
+640/640 [==============================] - 439s 685ms/step - loss: 0.6944 - acc: 0.5500 - val_loss: 1.5236 - val_acc: 0.4437
+100/100 [==============================] - 36s 364ms/step
+
+Testing loss: 1.4367430210113525, Testing acc: 0.5199999809265137
+
+
+Epoch 00001: loss improved from inf to 0.69439, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 2/10
+640/640 [==============================] - 418s 652ms/step - loss: 0.7004 - acc: 0.5602 - val_loss: 0.7343 - val_acc: 0.5188
+100/100 [==============================] - 37s 371ms/step
+
+Testing loss: 0.7342705726623535, Testing acc: 0.550000011920929
+
+
+Epoch 00002: loss did not improve from 0.69439
+Epoch 3/10
+640/640 [==============================] - 417s 652ms/step - loss: 0.6701 - acc: 0.5750 - val_loss: 0.6501 - val_acc: 0.6875
+100/100 [==============================] - 37s 374ms/step
+
+Testing loss: 0.6934584379196167, Testing acc: 0.5450000166893005
+
+
+Epoch 00003: loss improved from 0.69439 to 0.67009, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 4/10
+640/640 [==============================] - 418s 653ms/step - loss: 0.6869 - acc: 0.5617 - val_loss: 0.6750 - val_acc: 0.5312
+100/100 [==============================] - 38s 379ms/step
+
+Testing loss: 0.6933150887489319, Testing acc: 0.47999998927116394
+
+
+Epoch 00004: loss did not improve from 0.67009
+Epoch 5/10
+640/640 [==============================] - 418s 653ms/step - loss: 0.6800 - acc: 0.5789 - val_loss: 4.6210 - val_acc: 0.5188
+100/100 [==============================] - 38s 375ms/step
+
+Testing loss: 2.2676010131835938, Testing acc: 0.5400000214576721
+
+
+Epoch 00005: loss did not improve from 0.67009
+Epoch 6/10
+640/640 [==============================] - 417s 652ms/step - loss: 0.6755 - acc: 0.5797 - val_loss: 3.5517 - val_acc: 0.5125
+100/100 [==============================] - 37s 374ms/step
+
+Testing loss: 3.5517029762268066, Testing acc: 0.5199999809265137
+
+
+Epoch 00006: loss did not improve from 0.67009
+Epoch 7/10
+640/640 [==============================] - 419s 654ms/step - loss: 0.6830 - acc: 0.5633 - val_loss: 0.6940 - val_acc: 0.5875
+100/100 [==============================] - 38s 378ms/step
+
+Testing loss: 0.693986177444458, Testing acc: 0.5249999761581421
+
+
+Epoch 00007: loss did not improve from 0.67009
+Epoch 8/10
+640/640 [==============================] - 418s 654ms/step - loss: 0.6733 - acc: 0.5875 - val_loss: 0.6495 - val_acc: 0.5875
+100/100 [==============================] - 38s 381ms/step
+
+Testing loss: 0.6941418647766113, Testing acc: 0.5799999833106995
+
+
+Epoch 00008: loss did not improve from 0.67009
+Epoch 9/10
+640/640 [==============================] - 418s 653ms/step - loss: 0.6730 - acc: 0.5609 - val_loss: 1.3871 - val_acc: 0.4812
+100/100 [==============================] - 37s 370ms/step
+
+Testing loss: 1.3870877027511597, Testing acc: 0.5199999809265137
+
+
+Epoch 00009: loss did not improve from 0.67009
+Epoch 10/10
+640/640 [==============================] - 418s 654ms/step - loss: 0.6893 - acc: 0.5680 - val_loss: 2.3646 - val_acc: 0.5000
+100/100 [==============================] - 37s 372ms/step
+
+Testing loss: 1.2165024280548096, Testing acc: 0.5149999856948853
+
+
+Epoch 00010: loss did not improve from 0.67009
+{'dataset': 'hocky', 'cnn_train': 'retrain', 'cnn': 'wrapper', 'lstm': 'ConvLSTM2D', 'epochs': 10, 'learning_rate': 0.0001, 'batch_size': 2, 'dropout': 0.0, 'optimizer': 'Adam', 'initial_weights': 'glorot_uniform', 'seq_len': 20, 'validation loss': 0.6495310664176941, 'validation accuracy': 0.6875, 'last validation loss': 2.3645684719085693, 'last validation accuracy': 0.5, 'train accuracy': 0.5875, 'train loss': 0.6700918119866401, 'last train accuracy': 0.5679687, 'last train loss': 0.6893248373642564, 'test accuracy': 0.5799999833106995, 'test loss': 0.6933150887489319, 'last test accuracy': 0.5149999856948853, 'last test loss': 1.2165024280548096, 'final lr': 0.001, 'total epochs': 10}
+------------------------
+got the model!
+Epoch 1/60
+2020-04-06 20:35:15.420554: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcublas.so.10.0
+2020-04-06 20:35:15.750691: I tensorflow/stream_executor/platform/default/dso_loader.cc:42] Successfully opened dynamic library libcudnn.so.7
+640/640 [==============================] - 438s 684ms/step - loss: 0.6771 - acc: 0.5672 - val_loss: 1.6837 - val_acc: 0.4500
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 1.6844009160995483, Testing acc: 0.5199999809265137
+
+Epoch 2/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6788 - acc: 0.5531 - val_loss: 0.9343 - val_acc: 0.4688
+100/100 [==============================] - 36s 359ms/step
+
+Testing loss: 0.934303879737854, Testing acc: 0.5199999809265137
+
+Epoch 3/60
+640/640 [==============================] - 416s 651ms/step - loss: 0.6511 - acc: 0.6039 - val_loss: 1.3253 - val_acc: 0.4313
+100/100 [==============================] - 35s 353ms/step
+
+Testing loss: 1.3248778581619263, Testing acc: 0.5199999809265137
+
+
+Epoch 00003: loss improved from inf to 0.65105, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 4/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6635 - acc: 0.5977 - val_loss: 3.6265 - val_acc: 0.4688
+100/100 [==============================] - 36s 358ms/step
+
+Testing loss: 1.8267571926116943, Testing acc: 0.5199999809265137
+
+Epoch 5/60
+640/640 [==============================] - 418s 653ms/step - loss: 0.6519 - acc: 0.6062 - val_loss: 0.8595 - val_acc: 0.5063
+100/100 [==============================] - 37s 373ms/step
+
+Testing loss: 0.7050251960754395, Testing acc: 0.5199999809265137
+
+Epoch 6/60
+640/640 [==============================] - 418s 654ms/step - loss: 0.6566 - acc: 0.6055 - val_loss: 0.9716 - val_acc: 0.5125
+100/100 [==============================] - 37s 370ms/step
+
+Testing loss: 0.9716485738754272, Testing acc: 0.5199999809265137
+
+
+Epoch 00006: loss did not improve from 0.65105
+Epoch 7/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6580 - acc: 0.6219 - val_loss: 0.7733 - val_acc: 0.4125
+100/100 [==============================] - 37s 367ms/step
+
+Testing loss: 0.7733443975448608, Testing acc: 0.5199999809265137
+
+Epoch 8/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6487 - acc: 0.6133 - val_loss: 4.6510 - val_acc: 0.4062
+100/100 [==============================] - 37s 368ms/step
+
+Testing loss: 2.3985791206359863, Testing acc: 0.5199999809265137
+
+Epoch 9/60
+640/640 [==============================] - 418s 653ms/step - loss: 0.6617 - acc: 0.5898 - val_loss: 1.3195 - val_acc: 0.4812
+100/100 [==============================] - 37s 368ms/step
+
+Testing loss: 1.3194540739059448, Testing acc: 0.5199999809265137
+
+
+Epoch 00009: loss did not improve from 0.65105
+Epoch 10/60
+640/640 [==============================] - 418s 654ms/step - loss: 0.6578 - acc: 0.5969 - val_loss: 7.3538 - val_acc: 0.5000
+100/100 [==============================] - 37s 371ms/step
+
+Testing loss: 3.695634126663208, Testing acc: 0.5199999809265137
+
+Epoch 11/60
+640/640 [==============================] - 418s 653ms/step - loss: 0.6574 - acc: 0.6086 - val_loss: 8.4141e-04 - val_acc: 0.4313
+100/100 [==============================] - 37s 367ms/step
+
+Testing loss: 3.606940269470215, Testing acc: 0.5199999809265137
+
+Epoch 12/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6456 - acc: 0.6086 - val_loss: 7.1974e-05 - val_acc: 0.4625
+100/100 [==============================] - 37s 366ms/step
+
+Testing loss: 4.819650173187256, Testing acc: 0.5199999809265137
+
+
+Epoch 00012: loss improved from 0.65105 to 0.64565, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 13/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6404 - acc: 0.6109 - val_loss: 11.0219 - val_acc: 0.4875
+100/100 [==============================] - 37s 366ms/step
+
+Testing loss: 5.510888576507568, Testing acc: 0.5199999809265137
+
+Epoch 14/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6498 - acc: 0.6078 - val_loss: 7.7487 - val_acc: 0.4500
+100/100 [==============================] - 37s 373ms/step
+
+Testing loss: 3.8745598793029785, Testing acc: 0.5199999809265137
+
+Epoch 15/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6624 - acc: 0.5906 - val_loss: 2.9770e-05 - val_acc: 0.4875
+100/100 [==============================] - 36s 360ms/step
+
+Testing loss: 5.2115983963012695, Testing acc: 0.5199999809265137
+
+
+Epoch 00015: loss did not improve from 0.64565
+Epoch 16/60
+640/640 [==============================] - 418s 654ms/step - loss: 0.6588 - acc: 0.6047 - val_loss: 0.0129 - val_acc: 0.4563
+100/100 [==============================] - 37s 370ms/step
+
+Testing loss: 2.147369623184204, Testing acc: 0.5199999809265137
+
+Epoch 17/60
+640/640 [==============================] - 418s 653ms/step - loss: 0.6545 - acc: 0.5977 - val_loss: 0.0123 - val_acc: 0.4625
+
+Epoch 00017: ReduceLROnPlateau reducing learning rate to 4.999999873689376e-05.
+100/100 [==============================] - 37s 370ms/step
+
+Testing loss: 2.1924169063568115, Testing acc: 0.5199999809265137
+
+Epoch 18/60
+640/640 [==============================] - 419s 654ms/step - loss: 0.6484 - acc: 0.6133 - val_loss: 1.4907 - val_acc: 0.4437
+100/100 [==============================] - 37s 367ms/step
+
+Testing loss: 1.5148144960403442, Testing acc: 0.5199999809265137
+
+
+Epoch 00018: loss did not improve from 0.64565
+Epoch 19/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6413 - acc: 0.6094 - val_loss: 3.6360 - val_acc: 0.5125
+100/100 [==============================] - 36s 361ms/step
+
+Testing loss: 3.636012077331543, Testing acc: 0.5199999809265137
+
+Epoch 20/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6396 - acc: 0.6141 - val_loss: 1.9491 - val_acc: 0.5188
+100/100 [==============================] - 37s 366ms/step
+
+Testing loss: 2.031320333480835, Testing acc: 0.5199999809265137
+
+Epoch 21/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6376 - acc: 0.6062 - val_loss: 1.9945 - val_acc: 0.4500
+100/100 [==============================] - 36s 357ms/step
+
+Testing loss: 0.8567768335342407, Testing acc: 0.5199999809265137
+
+
+Epoch 00021: loss improved from 0.64565 to 0.63758, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 22/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6365 - acc: 0.6094 - val_loss: 0.3313 - val_acc: 0.6375
+
+Epoch 00022: ReduceLROnPlateau reducing learning rate to 2.499999936844688e-05.
+100/100 [==============================] - 35s 353ms/step
+
+Testing loss: 0.6936298608779907, Testing acc: 0.5899999737739563
+
+Epoch 23/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6210 - acc: 0.6281 - val_loss: 0.2953 - val_acc: 0.5000
+100/100 [==============================] - 35s 355ms/step
+
+Testing loss: 0.8019803762435913, Testing acc: 0.5199999809265137
+
+Epoch 24/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6253 - acc: 0.6406 - val_loss: 0.6937 - val_acc: 0.5000
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 0.6936560869216919, Testing acc: 0.5099999904632568
+
+
+Epoch 00024: loss improved from 0.63758 to 0.62526, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 25/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6191 - acc: 0.6203 - val_loss: 1.6706 - val_acc: 0.4812
+100/100 [==============================] - 35s 347ms/step
+
+Testing loss: 0.7313857674598694, Testing acc: 0.5199999809265137
+
+Epoch 26/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6233 - acc: 0.6305 - val_loss: 0.7260 - val_acc: 0.5688
+100/100 [==============================] - 35s 355ms/step
+
+Testing loss: 0.6936708092689514, Testing acc: 0.5199999809265137
+
+Epoch 27/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6128 - acc: 0.6438 - val_loss: 0.6612 - val_acc: 0.5875
+
+Epoch 00027: ReduceLROnPlateau reducing learning rate to 1.249999968422344e-05.
+100/100 [==============================] - 36s 356ms/step
+
+Testing loss: 0.6936755180358887, Testing acc: 0.6399999856948853
+
+
+Epoch 00027: loss improved from 0.62526 to 0.61284, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 28/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.6137 - acc: 0.6414 - val_loss: 0.6225 - val_acc: 0.5437
+100/100 [==============================] - 35s 353ms/step
+
+Testing loss: 0.6936826705932617, Testing acc: 0.5849999785423279
+
+Epoch 29/60
+640/640 [==============================] - 416s 650ms/step - loss: 0.6101 - acc: 0.6414 - val_loss: 0.6589 - val_acc: 0.6875
+100/100 [==============================] - 35s 352ms/step
+
+Testing loss: 0.6937533617019653, Testing acc: 0.6000000238418579
+
+Epoch 30/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6181 - acc: 0.6359 - val_loss: 0.3572 - val_acc: 0.5625
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 0.6937023401260376, Testing acc: 0.6150000095367432
+
+
+Epoch 00030: loss did not improve from 0.61284
+Epoch 31/60
+640/640 [==============================] - 418s 652ms/step - loss: 0.5979 - acc: 0.6492 - val_loss: 3.8391 - val_acc: 0.5188
+100/100 [==============================] - 35s 353ms/step
+
+Testing loss: 1.9040629863739014, Testing acc: 0.5299999713897705
+
+Epoch 32/60
+640/640 [==============================] - 418s 653ms/step - loss: 0.6242 - acc: 0.6234 - val_loss: 0.6479 - val_acc: 0.6562
+
+Epoch 00032: ReduceLROnPlateau reducing learning rate to 6.24999984211172e-06.
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 0.6947819590568542, Testing acc: 0.6349999904632568
+
+Epoch 33/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6045 - acc: 0.6422 - val_loss: 0.7119 - val_acc: 0.6438
+100/100 [==============================] - 35s 355ms/step
+
+Testing loss: 0.6971355676651001, Testing acc: 0.6449999809265137
+
+
+Epoch 00033: loss improved from 0.61284 to 0.60452, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 34/60
+640/640 [==============================] - 418s 652ms/step - loss: 0.6005 - acc: 0.6516 - val_loss: 0.6992 - val_acc: 0.6438
+100/100 [==============================] - 35s 352ms/step
+
+Testing loss: 0.6941447257995605, Testing acc: 0.6600000262260437
+
+Epoch 35/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6137 - acc: 0.6359 - val_loss: 0.6445 - val_acc: 0.6313
+100/100 [==============================] - 35s 349ms/step
+
+Testing loss: 0.6943625807762146, Testing acc: 0.6449999809265137
+
+Epoch 36/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.5893 - acc: 0.6391 - val_loss: 0.6128 - val_acc: 0.6313
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 0.6955258846282959, Testing acc: 0.6449999809265137
+
+
+Epoch 00036: loss improved from 0.60452 to 0.58933, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 37/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6130 - acc: 0.6242 - val_loss: 0.2948 - val_acc: 0.6187
+
+Epoch 00037: ReduceLROnPlateau reducing learning rate to 3.12499992105586e-06.
+100/100 [==============================] - 35s 349ms/step
+
+Testing loss: 0.6991961002349854, Testing acc: 0.6200000047683716
+
+Epoch 38/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6004 - acc: 0.6453 - val_loss: 0.5500 - val_acc: 0.5750
+100/100 [==============================] - 36s 355ms/step
+
+Testing loss: 0.7066406011581421, Testing acc: 0.6100000143051147
+
+Epoch 39/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.5946 - acc: 0.6578 - val_loss: 0.7001 - val_acc: 0.6125
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 0.7001458406448364, Testing acc: 0.6299999952316284
+
+
+Epoch 00039: loss did not improve from 0.58933
+Epoch 40/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.5894 - acc: 0.6672 - val_loss: 0.7034 - val_acc: 0.6125
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 0.703427791595459, Testing acc: 0.6449999809265137
+
+Epoch 41/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.5909 - acc: 0.6375 - val_loss: 0.2784 - val_acc: 0.5875
+100/100 [==============================] - 35s 352ms/step
+
+Testing loss: 0.703943133354187, Testing acc: 0.6349999904632568
+
+Epoch 42/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.5783 - acc: 0.6586 - val_loss: 0.6260 - val_acc: 0.5562
+
+Epoch 00042: ReduceLROnPlateau reducing learning rate to 1.56249996052793e-06.
+100/100 [==============================] - 35s 353ms/step
+
+Testing loss: 0.712871253490448, Testing acc: 0.6399999856948853
+
+
+Epoch 00042: loss improved from 0.58933 to 0.57831, saving model to /gdrive/My Drive/THESIS/Data/hocky_poseGatedNetBestModel.h5
+Epoch 43/60
+640/640 [==============================] - 416s 651ms/step - loss: 0.5870 - acc: 0.6555 - val_loss: 0.7019 - val_acc: 0.6313
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 0.7143697738647461, Testing acc: 0.6449999809265137
+
+Epoch 44/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.5835 - acc: 0.6664 - val_loss: 0.9222 - val_acc: 0.5375
+100/100 [==============================] - 36s 357ms/step
+
+Testing loss: 0.7148503661155701, Testing acc: 0.6299999952316284
+
+Epoch 45/60
+640/640 [==============================] - 418s 653ms/step - loss: 0.5885 - acc: 0.6555 - val_loss: 0.5478 - val_acc: 0.6062
+100/100 [==============================] - 36s 359ms/step
+
+Testing loss: 0.7057149410247803, Testing acc: 0.6499999761581421
+
+
+Epoch 00045: loss did not improve from 0.57831
+Epoch 46/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.5968 - acc: 0.6398 - val_loss: 0.4334 - val_acc: 0.5813
+100/100 [==============================] - 35s 351ms/step
+
+Testing loss: 0.7059756517410278, Testing acc: 0.6700000166893005
+
+Epoch 47/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.5794 - acc: 0.6797 - val_loss: 0.2522 - val_acc: 0.6000
+
+Epoch 00047: ReduceLROnPlateau reducing learning rate to 7.81249980263965e-07.
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 0.7160978317260742, Testing acc: 0.625
+
+Epoch 48/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.5858 - acc: 0.6609 - val_loss: 0.7102 - val_acc: 0.6375
+100/100 [==============================] - 35s 350ms/step
+
+Testing loss: 0.7101694345474243, Testing acc: 0.625
+
+
+Epoch 00048: loss did not improve from 0.57831
+Epoch 49/60
+640/640 [==============================] - 418s 652ms/step - loss: 0.5917 - acc: 0.6500 - val_loss: 1.0040 - val_acc: 0.5250
+100/100 [==============================] - 36s 356ms/step
+
+Testing loss: 0.7301433086395264, Testing acc: 0.6200000047683716
+
+Epoch 50/60
+640/640 [==============================] - 418s 653ms/step - loss: 0.5910 - acc: 0.6555 - val_loss: 0.4109 - val_acc: 0.6375
+100/100 [==============================] - 35s 352ms/step
+
+Testing loss: 0.7547416687011719, Testing acc: 0.6150000095367432
+
+Epoch 51/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.5842 - acc: 0.6617 - val_loss: 0.8403 - val_acc: 0.6562
+100/100 [==============================] - 35s 352ms/step
+
+Testing loss: 0.7244256138801575, Testing acc: 0.6150000095367432
+
+
+Epoch 00051: loss did not improve from 0.57831
+Epoch 52/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.5976 - acc: 0.6562 - val_loss: 0.7290 - val_acc: 0.5500
+
+Epoch 00052: ReduceLROnPlateau reducing learning rate to 3.906249901319825e-07.
+100/100 [==============================] - 36s 356ms/step
+
+Testing loss: 0.7290262579917908, Testing acc: 0.625
+
+Epoch 53/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.6100 - acc: 0.6305 - val_loss: 0.5077 - val_acc: 0.6313
+100/100 [==============================] - 35s 354ms/step
+
+Testing loss: 0.7143562436103821, Testing acc: 0.6200000047683716
+
+Epoch 54/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.5862 - acc: 0.6422 - val_loss: 1.3383 - val_acc: 0.5375
+100/100 [==============================] - 36s 357ms/step
+
+Testing loss: 0.7292554378509521, Testing acc: 0.6050000190734863
+
+
+Epoch 00054: loss did not improve from 0.57831
+Epoch 55/60
+640/640 [==============================] - 416s 651ms/step - loss: 0.6001 - acc: 0.6477 - val_loss: 0.9033 - val_acc: 0.6562
+100/100 [==============================] - 36s 358ms/step
+
+Testing loss: 0.7202901244163513, Testing acc: 0.625
+
+Epoch 56/60
+640/640 [==============================] - 416s 651ms/step - loss: 0.5954 - acc: 0.6461 - val_loss: 0.7331 - val_acc: 0.5875
+100/100 [==============================] - 35s 352ms/step
+
+Testing loss: 0.7330982089042664, Testing acc: 0.6050000190734863
+
+Epoch 57/60
+640/640 [==============================] - 416s 650ms/step - loss: 0.6021 - acc: 0.6398 - val_loss: 0.6857 - val_acc: 0.6187
+
+Epoch 00057: ReduceLROnPlateau reducing learning rate to 1.9531249506599124e-07.
+100/100 [==============================] - 36s 357ms/step
+
+Testing loss: 0.745628297328949, Testing acc: 0.6050000190734863
+
+
+Epoch 00057: loss did not improve from 0.57831
+Epoch 58/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.5740 - acc: 0.6750 - val_loss: 0.7028 - val_acc: 0.5875
+100/100 [==============================] - 35s 353ms/step
+
+Testing loss: 0.7491483092308044, Testing acc: 0.6150000095367432
+
+Epoch 59/60
+640/640 [==============================] - 417s 651ms/step - loss: 0.5887 - acc: 0.6492 - val_loss: 0.8186 - val_acc: 0.6000
+100/100 [==============================] - 35s 351ms/step
+
+Testing loss: 0.7580777406692505, Testing acc: 0.6200000047683716
+
+Epoch 60/60
+640/640 [==============================] - 417s 652ms/step - loss: 0.5884 - acc: 0.6578 - val_loss: 0.9952 - val_acc: 0.6125
+100/100 [==============================] - 35s 353ms/step

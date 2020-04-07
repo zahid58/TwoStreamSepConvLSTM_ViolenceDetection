@@ -1,18 +1,18 @@
 import tensorflow.keras as keras
 import os
 from itertools import chain
-import h5py
+
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback, ModelCheckpoint
 from keras.optimizers import RMSprop, Adam
-from keras.models import load_model
+
 import pandas as pd
 from keras.applications import Xception, ResNet50, InceptionV3, MobileNet, VGG19, DenseNet121, InceptionResNetV2, VGG16
 from keras.layers import LSTM, ConvLSTM2D
 import BuildModel_basic
 import DatasetBuilder
-
+import poseGatedNet
 from numpy.random import seed, shuffle
-
+from keras.models import load_model
 from tensorflow import set_random_seed
 from collections import defaultdict
 import pickle
@@ -25,10 +25,10 @@ class TestCallback(Callback):
         self.test_steps = test_steps
     def on_epoch_end(self, epoch, logs={}):
         #x, p, y = self.test_data
-        loss, acc = self.model.evaluate_generator(generator=self.test_gen, steps=self.test_steps, callbacks=None, use_multiprocessing=False, verbose=1)
+        loss, acc = self.model.evaluate_generator(generator=self.test_gen, steps=self.test_steps, callbacks=None, use_multiprocessing=True, verbose=1)
         self.test_loss.append(loss)
         self.test_acc.append(acc)
-        print('\nTesting loss: {}, acc: {}\n'.format(loss, acc))
+        print('\nTesting loss: {}, Testing acc: {}\n'.format(loss, acc))
 
 
 def train_eval_network(dataset_name, train_gen, validate_gen, test_gen, seq_len, epochs, batch_size,
@@ -43,23 +43,21 @@ def train_eval_network(dataset_name, train_gen, validate_gen, test_gen, seq_len,
                   learning_rate=learning_rate, batch_size=batch_size, dropout=dropout,
                   optimizer=optimizer[0].__name__, initial_weights=initial_weights, seq_len=seq_len)
     print("run experimnt " + str(result))
-    model = None
     bestModelPath = '/gdrive/My Drive/THESIS/Data/' + str(dataset_name) + '_poseGatedNetBestModel.h5'
-    if use_new_model :
-    	model = BuildModel_basic.build(size=size, seq_len=seq_len, learning_rate=learning_rate,
-                                   optimizer_class=optimizer, initial_weights=initial_weights,
-                                   cnn_class=cnn_arch, pre_weights=pre_weights, lstm_conf=lstm_conf,
-                                   cnn_train_type=cnn_train_type, dropout=dropout, classes=classes)
-    else:    
-	model = load_model(bestModelPath)
-
+    model = None
+    if use_new_model:
+        model = poseGatedNet.getModel(size=size, seq_len=seq_len , cnn_weight = 'imagenet',lstm_conf = lstm_conf )
+    else:
+        print('getting the model from ',bestModelPath)
+        model = load_model(bestModelPath)
+        print('got the model!')
     # the network is trained on data generatores and apply the callacks when the validation loss is not improving:
     # 1. early stop to training after n iteration
     # 2. reducing the learning rate after k iteration where k< n
     test_history = TestCallback(test_gen=test_gen,test_steps= (int(len_test/batch_size)) )
-    
-    modelcheckpoint = ModelCheckpoint(bestModelPath, monitor='loss', verbose=1, save_best_only=True, mode='auto', period=1)    
 
+    modelcheckpoint = ModelCheckpoint(bestModelPath, monitor='loss', verbose=1, save_best_only=True, mode='auto', period=1)    
+    
     history = model.fit_generator(
         steps_per_epoch=int(float(len_train) / float(batch_size * batch_epoch_ratio)),
         generator=train_gen,
@@ -68,7 +66,7 @@ def train_eval_network(dataset_name, train_gen, validate_gen, test_gen, seq_len,
         validation_steps=int(float(len_valid) / float(batch_size)),
         callbacks=[EarlyStopping(monitor='val_loss', min_delta=0.001, patience=patience_es, ),
                    ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=patience_lr, min_lr=1e-8, verbose=1),
-                   test_history,modelcheckpoint
+                   test_history, modelcheckpoint
                    ]
     )
     history_to_save = history.history
@@ -79,9 +77,12 @@ def train_eval_network(dataset_name, train_gen, validate_gen, test_gen, seq_len,
     for k, v in result.items():
         model_name = model_name + "_" + str(k) + "-" + str(v).replace(".", "d")
     model_path = os.path.join(res_path, model_name)
-    pd.DataFrame(history_to_save).to_csv(model_path + "_train_results.csv")
-    historyInDrivePath ='/gdrive/My Drive/THESIS/Data/' + str(dataset_name) + '_poseGatedNetTrainResults.csv'
-    pd.DataFrame(history_to_save).to_csv(historyInDrivePath)
+    try:
+        pd.DataFrame(history_to_save).to_csv(model_path + "_train_results.csv")
+        historyInDrivePath ='/gdrive/My Drive/THESIS/Data/' + str(dataset_name) + '_poseGatedNetTrainResults.csv'
+        pd.DataFrame(history_to_save).to_csv(historyInDrivePath)
+    except:
+        pass
     result['validation loss'] = min(history.history['val_loss'])
     result['validation accuracy'] = max(history.history['val_acc'])
     result['last validation loss'] = history.history['val_loss'][-1]
@@ -114,7 +115,7 @@ def get_generators(dataset_name, dataset_videos, datasets_frames, datasets_poses
       train_y, valid_y, test_y, \
       avg_length = DatasetBuilder.createDataset(dataset_videos, datasets_frames, datasets_poses, fix_len, crop_x_y = crop_x_y, force=force, figure_shape = figure_size, e=e)
       trainingStuff = (train_path, valid_path, test_path, train_y, valid_y, test_y,avg_length)
-      fileName = '/gdrive/My Drive/THESIS/Data/data/' + str(dataset_name) + 'Stuff.pickle'
+      fileName = str(dataset_name) + 'Stuff.pickle'
       try:
         file_ = open(fileName, 'wb')
         pickle.dump(trainingStuff, file_)
@@ -123,7 +124,7 @@ def get_generators(dataset_name, dataset_videos, datasets_frames, datasets_poses
         print(err)
 
     else :
-      fileName = '/gdrive/My Drive/THESIS/Data/data/' + str(dataset_name) + 'Stuff.pickle'
+      fileName = str(dataset_name) + 'Stuff.pickle'
       try:
         file_ = open(fileName, 'rb')
         trainingStuff = pickle.load(file_)
@@ -256,21 +257,21 @@ def hyper_tune_network(dataset_name, epochs, batch_size, batch_epoch_ratio, figu
 
 # static parameter for the netwotk
 datasets_videos = dict(
-    hocky=dict(hocky="/gdrive/My Drive/THESIS/Data/data/raw_videos/HockeyFights"),
+    hocky=dict(hocky="data/raw_videos/HockeyFights"),
     #violentflow=dict(violentflow="data/raw_videos/violentflow"),
-    movies=dict(movies="/gdrive/My Drive/THESIS/Data/data/raw_videos/movies")
+    #movies=dict(movies="data/raw_videos/movies")
 )
 
 crop_dark = dict(
-    hocky=(18, 48),
-    violentflow=None,
-    movies=None
+    hocky=(18, 48)
+    #violentflow=None,
+    #movies=None
 )
 
-datasets_frames = "/gdrive/My Drive/THESIS/Data/data/raw_frames"
-datasets_poses = "/gdrive/My Drive/THESIS/Data/data/raw_poses"
-res_path = "/gdrive/My Drive/THESIS/Data/data/results"
-figure_size = 244
+datasets_frames = "data/raw_frames"
+datasets_poses = "data/raw_poses"
+res_path = "results"
+figure_size = 224
 # split_ratio = 0.1
 batch_size = 2
 # batch_epoch_ratio = 0.5 #double the size because we use augmentation
@@ -290,29 +291,9 @@ optimizers = [(RMSprop, {}), (Adam, {})]
 dropouts = [0.0, 0.5]
 cnn_train_types = ['retrain', 'static']
 
-apply_hyper = False
 
-if apply_hyper:
-    # the hyper tunning symulate the architechture behavior
-    # we set the batch_epoch_ratio - reduced by X to have the hypertunning faster with epoches shorter
-    hyper, results = hyper_tune_network(dataset_name='hocky', epochs=30,
-                                        batch_size=batch_size, batch_epoch_ratio=1, figure_size=figure_size,
-                                        initial_weights=initial_weights, lstm=lstm,
-                                        cnns_arch=cnns_arch, learning_rates=learning_rates,
-                                        optimizers=optimizers, cnn_train_types=cnn_train_types, dropouts=dropouts,
-                                        classes=classes, use_augs=use_augs, fix_lens=fix_lens)
-
-    pd.DataFrame(results).to_csv("results_hyper.csv")
-    cnn_arch, learning_rate, optimizer, cnn_train_type, dropout, use_aug, fix_len = hyper['cnn_arch'], \
-                                                                                    hyper['learning_rate'], \
-                                                                                    hyper['optimizer'], \
-                                                                                    hyper['cnn_train_type'], \
-                                                                                    hyper['dropout'], hyper['use_aug'], \
-                                                                                    hyper['seq_len'],
-else:
-    results = []
-    cnn_arch, learning_rate, optimizer, cnn_train_type, dropout, use_aug, fix_len = ResNet50, 0.0001, (
-    Adam, {}), 'retrain', 0.0, True, 20
+results = []
+cnn_arch, learning_rate, optimizer, cnn_train_type, dropout, use_aug, fix_len = ResNet50, 0.0001, (Adam, {}), 'retrain', 0.0, True, 20
 
 
 
@@ -321,18 +302,19 @@ else:
 
 import pickle
 ###### use fresh data = False when we have raw frames ready for us
-use_fresh_data = True # SET USE_FRESH_DATA HERE!
+use_fresh_data = False # SET USE_FRESH_DATA HERE!
 ######
-test_data_integrity_flag = True
+test_data_integrity_flag = False
 ######
-use_new_model = False #normally it would be false
+use_new_model = False
 ######
+
 
 e = None
 if use_fresh_data == True:
   from tf_pose.estimator import TfPoseEstimator
   from tf_pose.networks import get_graph_path, model_wh
-  e = TfPoseEstimator(get_graph_path('cmu'))
+  e = TfPoseEstimator(get_graph_path('mobilenet_thin'))
 
 
 # apply best architechture on all datasets with more epochs
@@ -354,8 +336,8 @@ for dataset_name, dataset_videos in datasets_videos.items():
     print('finish training data preparation for',dataset_name)
         
     
-    continue #debug
-    result = train_eval_network(epochs=1, dataset_name=dataset_name, train_gen=train_gen, validate_gen=validate_gen,
+    #continue #debug
+    result = train_eval_network(epochs=10, dataset_name=dataset_name, train_gen=train_gen, validate_gen=validate_gen,
                                 test_gen = test_gen, seq_len=seq_len, batch_size=batch_size,
                                 batch_epoch_ratio=0.5, initial_weights=initial_weights, size=figure_size,
                                 cnn_arch=cnn_arch, learning_rate=learning_rate,
@@ -364,6 +346,6 @@ for dataset_name, dataset_videos in datasets_videos.items():
                                 dropout=dropout, classes=classes)
     #debug
     results.append(result)
-    pd.DataFrame(results).to_csv( res_path  + "/results_datasets.csv")
+    pd.DataFrame(results).to_csv("results_datasets.csv")
     print(result)
-pd.DataFrame(results).to_csv( res_path + "/results_march24.csv")
+pd.DataFrame(results).to_csv("results_march24.csv")

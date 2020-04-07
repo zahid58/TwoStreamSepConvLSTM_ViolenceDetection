@@ -127,22 +127,11 @@ def createDataset(datasets_video_path, figure_output_path, pose_output_path ,fix
         datasets_images[dataset_name] = dataset_images
     avg_length = int(float(sum(videos_seq_length)) / max(len(videos_seq_length), 1))
     
-    #print(len(videos_frames_paths))
-    train_path, test_path, train_y, test_y =  train_test_split(videos_frames_paths,videos_labels, test_size=0.20, random_state=42)
-    #print(len(train_path))
-    # if apply_aug:
-    #     aug_paths = []
-    #     aug_y = []
-    #     for train_path_, train_y_ in zip(train_path,train_y):
-    #
-    #         aug_path = generate_augmentations(train_path_,force = False)
-    #         aug_paths.append(aug_path)
-    #         aug_y.append(train_y_)
-    #
-    #     train_path = train_path + aug_paths
-    #     train_y = train_y + aug_y
 
-    train_path, valid_path, train_y, valid_y = train_test_split(train_path, train_y, test_size=0.20, random_state=42)
+    train_path, test_path, train_y, test_y =  train_test_split(videos_frames_paths,videos_labels, test_size=0.15, random_state=42)
+
+
+    train_path, valid_path, train_y, valid_y = train_test_split(train_path, train_y, test_size=0.15, random_state=42)
     return train_path,valid_path, test_path,\
            train_y, valid_y, test_y,\
            avg_length
@@ -151,14 +140,14 @@ def createDataset(datasets_video_path, figure_output_path, pose_output_path ,fix
 def frame_loader(frames,figure_shape,to_norm = True):
     output_frames = []
     for frame in frames:
-        image = load_img(frame, target_size=(figure_shape, figure_shape),interpolation='bilinear')
+        image = load_img(frame, target_size=(224, 224),interpolation='bilinear')
         img_arr = img_to_array(image)
         # Scale
-        figure = (img_arr / 255.).astype(np.float32)
+        figure = (img_arr / 255.0).astype(np.float32)
         # Normalize
-        mean = [0.485, 0.456, 0.406]
-        std = [0.229, 0.224, 0.225]
-        figure = (figure - mean) / std
+        #mean = [0.485, 0.456, 0.406]
+        #std = [0.229, 0.224, 0.225]
+        #figure = (figure - mean) / std
         output_frames.append(figure)
     return output_frames
 
@@ -171,7 +160,7 @@ def test_data_integrity(data_paths,labels,batch_size,figure_shape,seq_length,use
         data_paths_batch = [data_paths[i]]
         labels_batch = [labels[i]]
         X,P,y = None,None,None
-        print(i,data_paths_batch)
+        print(data_paths_batch)
         try: 
           X,P,y = get_sequences(data_paths_batch, labels_batch, figure_shape, seq_length, classes = classes, use_crop=use_crop, crop_x_y=crop_x_y)
           if(X.ndim!=5 or P.ndim!=5):
@@ -216,8 +205,7 @@ def data_generator(data_paths,labels,batch_size,figure_shape,seq_length,use_aug,
         X,P,y = None, None, None 
         try:  
           X,P,y = get_sequences(data_paths_batch,labels_batch,figure_shape,seq_length, classes, use_augmentation = use_aug,use_crop=use_crop,crop_x_y=crop_x_y)       
-        except Exception as err_:
-          print(err_)
+        except:
           continue
         if(X.ndim!=5 or P.ndim!=5):
           continue
@@ -298,7 +286,7 @@ def get_sequences(data_paths,labels,figure_shape,seq_length,classes=1, use_augme
         #print('loop', i)
         frame_path,  pose_path = frame_pose_path
         frame_path, pose_path = frame_path[29:], pose_path[29:]
-        #print(frame_path)
+        
         frames = sorted(glob.glob(os.path.join(frame_path, '*jpg')))
         poses = sorted(glob.glob(os.path.join(pose_path, '*jpg')))
         #print('loading frames')
