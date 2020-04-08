@@ -8,7 +8,6 @@ from keras.optimizers import RMSprop, Adam
 import pandas as pd
 from keras.applications import Xception, ResNet50, InceptionV3, MobileNet, VGG19, DenseNet121, InceptionResNetV2, VGG16
 from keras.layers import LSTM, ConvLSTM2D
-import BuildModel_basic
 import DatasetBuilder
 import poseGatedNet
 from numpy.random import seed, shuffle
@@ -34,7 +33,7 @@ class TestCallback(Callback):
 def train_eval_network(dataset_name, train_gen, validate_gen, test_gen, seq_len, epochs, batch_size,
                        batch_epoch_ratio, initial_weights, size, cnn_arch, learning_rate,
                        optimizer, cnn_train_type, pre_weights, lstm_conf, len_train, len_valid, len_test, dropout, classes,
-                       patience_es=15, patience_lr=5):
+                       patience_es=15, patience_lr=3):
     """the function build, compile fit and evaluate a certain architechtures on a dataset"""
     set_random_seed(2)
     seed(1)
@@ -51,9 +50,10 @@ def train_eval_network(dataset_name, train_gen, validate_gen, test_gen, seq_len,
         print('getting the model from ',bestModelPath)
         model = load_model(bestModelPath)
         print('got the model!')
-    # the network is trained on data generatores and apply the callacks when the validation loss is not improving:
-    # 1. early stop to training after n iteration
-    # 2. reducing the learning rate after k iteration where k< n
+    
+    optimizer = Adam(lr=.00005)
+    model.compile(optimizer=optimizer, loss='binary_crossentropy',metrics=['acc'])
+
     test_history = TestCallback(test_gen=test_gen,test_steps= (int(len_test/batch_size)) )
 
     modelcheckpoint = ModelCheckpoint(bestModelPath, monitor='loss', verbose=1, save_best_only=True, mode='auto', period=1)    
@@ -337,7 +337,7 @@ for dataset_name, dataset_videos in datasets_videos.items():
         
     
     #continue #debug
-    result = train_eval_network(epochs=10, dataset_name=dataset_name, train_gen=train_gen, validate_gen=validate_gen,
+    result = train_eval_network(epochs=20, dataset_name=dataset_name, train_gen=train_gen, validate_gen=validate_gen,
                                 test_gen = test_gen, seq_len=seq_len, batch_size=batch_size,
                                 batch_epoch_ratio=0.5, initial_weights=initial_weights, size=figure_size,
                                 cnn_arch=cnn_arch, learning_rate=learning_rate,
@@ -348,4 +348,4 @@ for dataset_name, dataset_videos in datasets_videos.items():
     results.append(result)
     pd.DataFrame(results).to_csv("results_datasets.csv")
     print(result)
-pd.DataFrame(results).to_csv("results_march24.csv")
+pd.DataFrame(results).to_csv("results_april5.csv")

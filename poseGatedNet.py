@@ -9,7 +9,7 @@ from keras.layers.convolutional import (Conv2D, MaxPooling3D, Conv3D,
     MaxPooling2D)
 import sys
 from keras.applications import Xception, ResNet50, InceptionV3, MobileNetV2
-from keras.layers import Dense, GlobalAveragePooling2D, Multiply, MaxPooling2D
+from keras.layers import Dense, GlobalAveragePooling2D, Multiply, MaxPooling2D,Concatenate,Add
 from keras.models import Model
 from keras.optimizers import Adam
 
@@ -36,14 +36,14 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
     pose_cnn = Model(pose_cnn.input, pose_cnn.layers[-2].output)
     
     pose_cnn = TimeDistributed(pose_cnn)(pose_input)
-    pose_cnn = Activation('sigmoid')(pose_cnn)
+    pose_cnn = TimeDistributed(Activation('sigmoid'))(pose_cnn)
     
     cnn = TimeDistributed(cnn)(image_input)
 
     multiplied = Multiply()([cnn, pose_cnn])
-    cnn = TimeDistributed(MaxPooling2D(pool_size=(2,2))) (multiplied)
+    #multiplied = TimeDistributed(MaxPooling2D(pool_size=(2,2))) (multiplied)
     
-    lstm = lstm_conf[0](**lstm_conf[1])(cnn)
+    lstm = lstm_conf[0](**lstm_conf[1])(multiplied)
     lstm = MaxPooling2D(pool_size=(2, 2))(lstm)   
     flat = Flatten()(lstm)
     x = BatchNormalization()(flat)
@@ -67,9 +67,7 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
     predictions = Dense(classes,  activation=activation)(x)
 
     model = Model(inputs=[image_input, pose_input], outputs=predictions)
-    optimizer = Adam()
-    model.compile(optimizer=optimizer, loss=loss_func,metrics=['acc'])
-
+    
     print(model.summary())
 
     return model
