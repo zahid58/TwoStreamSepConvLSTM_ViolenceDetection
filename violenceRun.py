@@ -151,7 +151,7 @@ def get_generators(dataset_name, dataset_videos, datasets_frames, datasets_poses
     validate_gen = DatasetBuilder.data_generator(valid_path, valid_y, batch_size, figure_size, avg_length,
                                                  use_aug=False, use_crop=False, crop_x_y=crop_x_y, classes=classes)
     print('prepared validate gen')
-    test_gen = DatasetBuilder.test_generator(test_path, test_y, batch_size, figure_size, avg_length, use_aug=False, use_crop=False, crop_x_y=crop_x_y,
+    test_gen = DatasetBuilder.data_generator(test_path, test_y, batch_size, figure_size, avg_length, use_aug=False, use_crop=False, crop_x_y=crop_x_y,
                                                   classes=classes)
     print('prepared test generator')
     print('prepared generators')
