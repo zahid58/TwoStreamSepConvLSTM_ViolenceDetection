@@ -174,28 +174,27 @@ def test_data_integrity(data_paths,labels,batch_size,figure_shape,seq_length,use
     print('test complete. Error Count :', errCount)  
 
 
-def test_generator(data_paths,labels,batch_size,figure_shape,seq_length,use_aug,use_crop,crop_x_y,classes = 1):
+def data_generator(data_paths,labels,batch_size,figure_shape,seq_length,use_aug,use_crop,crop_x_y,classes = 1):
     ii = 0
     while True:
         indexes = np.arange(len(data_paths))
         select_indexes = indexes[ii:ii+batch_size]
         ii += batch_size
+        if ii>=len(data_paths):
+          ii  = 0
         data_paths_batch = [data_paths[i] for i in select_indexes]
         labels_batch = [labels[i] for i in select_indexes]
         X,P,y = None, None, None
         try:
           X,P,y = get_sequences(data_paths_batch, labels_batch, figure_shape, seq_length, classes = classes, use_crop=use_crop, crop_x_y=crop_x_y)
-        except: #flawed
-          ii -= batch_size
-          data_paths_batch = [data_paths[i] for i in select_indexes]
-          labels_batch = [labels[i] for i in select_indexes]
-          X,P,y = get_sequences(data_paths_batch, labels_batch, figure_shape, seq_length, classes = classes, use_crop=use_crop, crop_x_y=crop_x_y)
-          yield [X,P],y
-          ii += 2*batch_size
+        except:
           continue
-        yield [X,P],y
+        if(X.ndim!=5 or P.ndim!=5):
+          continue
+        yield X,y
+        #yield [X,P],y
 
-def data_generator(data_paths,labels,batch_size,figure_shape,seq_length,use_aug,use_crop,crop_x_y,classes = 1):
+def test_generator(data_paths,labels,batch_size,figure_shape,seq_length,use_aug,use_crop,crop_x_y,classes = 1):
     while True:
         indexes = np.arange(len(data_paths))
         np.random.shuffle(indexes)
