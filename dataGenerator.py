@@ -1,9 +1,10 @@
 from tensorflow.keras.utils import Sequence, to_categorical
-import random 
+from tensorflow.keras.preprocessing.image import apply_affine_transform
 import numpy as np
 import os
 from time import time
 import cv2
+import random
 
 class DataGenerator(Sequence):
     """Data Generator inherited from keras.utils.Sequence
@@ -91,6 +92,7 @@ class DataGenerator(Sequence):
     def normalize(self, data):
         #mean = np.mean(data)
         #std = np.std(data)
+        data = (data / 255.0).astype(np.float32)
         mean = [0.485, 0.456, 0.406]
         std = [0.229, 0.224, 0.225]
         return (data-mean) / std
@@ -103,7 +105,7 @@ class DataGenerator(Sequence):
     
     def uniform_sampling(self, video, target_frames=20):
         # get total frames of input video and calculate sampling interval 
-        len_frames = int(len(video))
+        len_frames = video.shape[0]
         interval = int(np.ceil(len_frames/target_frames))
         # init empty list for sampled video and 
         sampled_video = []
@@ -126,13 +128,16 @@ class DataGenerator(Sequence):
         start_point = np.random.randint(len(video)-target_frames)
         return video[start_point:start_point+target_frames]
             
-    def color_jitter(self,video):
+    def color_jitter(self,video,prob=0.5):
         # range of s-component: 0-1
         # range of v component: 0-255
+        s = np.random.rand()
+        if s > prob:
+            return video
         s_jitter = np.random.uniform(-0.2,0.2)
         v_jitter = np.random.uniform(-30,30)
         for i in range(len(video)):
-            hsv = cv2.cvtColor(video[i], cv2.COLOR_RGB2HSV)
+            hsv = cv2.cvtColor(video[i], cv2.COLOR_BGR2HSV)
             s = hsv[...,1] + s_jitter
             v = hsv[...,2] + v_jitter
             s[s<0] = 0
@@ -141,8 +146,10 @@ class DataGenerator(Sequence):
             v[v>255] = 255
             hsv[...,1] = s
             hsv[...,2] = v
-            video[i] = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
+            video[i] = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
         return video
+
+
     def crop_corner(self, video ,prob=0.5):
         s = np.random.rand()
         if s > prob:
@@ -150,7 +157,7 @@ class DataGenerator(Sequence):
         frame_size = np.size(video, axis = 1)
         corner_keys = ["Left_up","Right_down","Right_up","Left_down","Center"]
         corner = random.choice(corner_keys)
-        percentages = [.8,.9,.7]
+        percentages = [.85,.75]
         percentage = random.choice(percentages)
         resize = int(frame_size*percentage)
         if(corner =="Left_up"):
@@ -179,25 +186,73 @@ class DataGenerator(Sequence):
             x_end = frame_size-half
             y_start = half
             y_end = frame_size-half
+        for i in range(video.shape[0]):
+            img = cv2.resize(video[i,y_start:y_end,x_start:x_end, :], (frame_size, frame_size)).astype(np.float32)
+            video[i] = img
+        return video
+
+
+    def random_shear(self, video, intensity, prob = 0.5, row_axis=0, col_axis=1, channel_axis=2,
+                    fill_mode='nearest', cval=0., interpolation_order=1):
+        s = np.random.rand()
+        if s > prob:
+            return video
+        shear = np.random.uniform(-intensity, intensity)
+        
+        for i in range(video.shape[0]):
+            x = apply_affine_transform(video[i,:,:,:], shear=shear, channel_axis=channel_axis,
+                                fill_mode=fill_mode, cval=cval,
+                                order=interpolation_order)
+            video[i] = x
+        return video
+    
+
+    def random_shift(self, video, wrg, hrg, prob =0.5,row_axis=0, col_axis=1, channel_axis=2,
+                    fill_mode='nearest', cval=0., interpolation_order=1):
+        s = np.random.rand()
+        if s > prob:
+            return video        
+        h, w = video.shape[1], video.shape[2]
+        tx = np.random.uniform(-hrg, hrg) * h
+        ty = np.random.uniform(-wrg, wrg) * w
+        
+        for i in range(video.shape[0]):
+            x = apply_affine_transform(video[i,:,:,:], tx=tx, ty=ty, channel_axis=channel_axis,
+                                fill_mode=fill_mode, cval=cval,
+                                order=interpolation_order)
+            video[i] = x
+        return video
+
+    def random_rotation(self, video, rg, prob =0.5,row_axis=0, col_axis=1, channel_axis=2,
+                    fill_mode='nearest', cval=0., interpolation_order=1):
+        s = np.random.rand()
+        if s > prob:
+            return video        
+        theta = np.random.uniform(-rg,rg)
 
         for i in range(np.shape(video)[0]):
-            img = cv2.resize(video[i,y_start:y_end,x_start:x_end, :], (frame_size, frame_size)).astype(np.float32)
-            video[i]=img
-        return video       
+            x = apply_affine_transform(video[i,:,:,:], theta=theta, channel_axis=channel_axis,
+                                fill_mode=fill_mode, cval=cval,
+                                order=interpolation_order)
+            video[i] = x
+        return video
+
     def load_data(self, path):
-        # load the processed .npy files which have 5 channels (1-3 for RGB, 4-5 for optical flows)
+        # load the processed .npy files 
         data = np.load(path, mmap_mode='r')
         data = np.float32(data)
         # sampling 20 frames uniformly from the entire video
         data = self.uniform_sampling(video=data, target_frames=self.target_frames)
-        # whether to utilize the data augmentation
+        # normalize bgr images 
+        data = self.normalize(data)
+        # data augmentation
         if  self.data_aug:
-            data[...,:3] = self.color_jitter(data[...,:3])
-            data = self.random_flip(data, prob=0.5)
+            #data = self.color_jitter(data,prob=0.6)
+            #data = self.random_flip(data, prob=0.5)
             data = self.crop_corner(data, prob=0.5)
-        # normalize rgb images 
-        data[...,:3] = self.normalize(data[...,:3])
-        #data[...,3:] = self.normalize(data[...,3:])
+            #data = self.random_shift(data, wrg = .2, hrg= .2, prob = 0.4)
+            #data = self.random_shear(data,intensity=10,prob=0.3)
+            #data = self.random_rotation(data, rg=15, prob=0.4)
         return data
 
 

@@ -57,7 +57,7 @@ def five_fold_split(dataset_name,source):
     random.seed(42)
     random.shuffle(fightVideos)
     random.shuffle(nonFightVideos)
-    kf = KFold(n_splits=5,random_state=42,shuffle=True)
+    kf = KFold(n_splits=5,random_state=42,shuffle=False)
     splits = []
     for train_ind, test_ind in kf.split(fightVideos):
         testFightVideos = [fightVideos[i] for i in test_ind]

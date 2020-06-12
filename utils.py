@@ -11,6 +11,7 @@ def save_plot_history(history, save_path,split_num=0):
     pd.DataFrame(history).to_csv('split_'+str(split_num)+'_history.csv')  #local
 
     print('plotting and saving train test graphs...')
+    #print(history.keys())
     # summarize history for accuracy
     plt.figure(figsize=(10, 6))
     plt.plot(history['acc'])
@@ -22,6 +23,9 @@ def save_plot_history(history, save_path,split_num=0):
     plt.grid(True)
     plt.savefig('split_'+str(split_num)+'_accuracy.png',bbox_inches='tight') #local
     plt.savefig(save_path+'accuracy.png',bbox_inches='tight') #gdrive
+    
+
+    
     # summarize history for loss
     plt.figure(figsize=(10, 6))
     plt.plot(history['loss'])
@@ -33,7 +37,6 @@ def save_plot_history(history, save_path,split_num=0):
     plt.grid(True)
     plt.savefig('split_'+str(split_num)+'_loss.png',bbox_inches='tight')  #local
     plt.savefig(save_path+'loss.png',bbox_inches='tight')  #gdrive
-
 
 def save_history_as_pickle(file_, path_, dataset_):
     local_path = str(dataset_) + '_historyOnEachSplit.pickle'
@@ -47,7 +50,6 @@ def save_history_as_pickle(file_, path_, dataset_):
         print('saved', drive_path)
     except Exception as e:
         print(e)
-
 
 def evaluate_accuracy_method1(file_):
     test_acc = []
