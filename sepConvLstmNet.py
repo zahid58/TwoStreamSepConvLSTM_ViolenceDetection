@@ -4,8 +4,9 @@ from tensorflow.keras.layers import Dense, Flatten, Dropout, ZeroPadding3D, Conv
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import TimeDistributed
 from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.layers import Dense,GlobalAveragePooling2D, Multiply, MaxPooling2D,Concatenate,Add
+from tensorflow.keras.layers import Lambda, Dense, GlobalAveragePooling2D, Multiply, MaxPooling2D, Concatenate, Add, AveragePooling2D 
 from tensorflow.keras.models import Model
+from tensorflow.python.keras import backend as K
 from customLayers import SepConvLSTM2D
 from customCnn import SeparableConvResnet
 
@@ -25,19 +26,22 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
         layer.trainable = True
  
     cnn = TimeDistributed(cnn)(image_input)
-    cnn = TimeDistributed(MaxPooling2D(pool_size=(2,2)))(cnn)
+    cnn = TimeDistributed(AveragePooling2D(pool_size=(2,2)))(cnn)
 
-    lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=True)(cnn)
-    lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=False)(lstm)
+    lstm = SepConvLSTM2D(filters=512, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=0.3, recurrent_dropout=0.3)(cnn)
+    lstm = SepConvLSTM2D(filters=512, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=0.3, recurrent_dropout=0.3)(lstm)
 
-    # we can use it for elementwise maxpooling / mean pooling
-    # time_distributed_merge_layer = Lambda(function=lambda x: K.mean(x, axis=1), output_shape=lambda shape: (shape[0],) + shape[2:])
+    # elementwise maxpooling / mean pooling
+    TimeDistributedMean = Lambda(function=lambda x: K.mean(x, axis=1), output_shape=lambda shape: (shape[0],) + shape[2:])
+    lstm = TimeDistributedMean(lstm)
 
     lstm = Flatten()(lstm)
     x = BatchNormalization()(lstm)
 
     dropout = 0.4
-    x = Dense(128, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
+    x = Dropout(dropout)(x)
+    x = Dense(256, activation='relu')(x)
     x = Dropout(dropout)(x)
     x = Dense(16, activation='relu')(x)
     x = Dropout(dropout)(x)
