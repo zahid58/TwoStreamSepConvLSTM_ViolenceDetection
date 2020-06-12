@@ -17,18 +17,19 @@ import shutil
 import pickle
 
 dataset = 'hockey'
-dataset_videos = {'hockey':'raw_videos/hockey','movies':'raw_videos/movies'}
+dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies'}
 crop_dark = {
-    hocky = (16,45),
-    movies = (18,48)
+    'hockey' : (16,45),
+    'movies' : (18,48)
 }
 
 batch_size = 4   #2
 vid_len = 20   #10
 frame_size = 224
 
+savePath = '/gdrive/My Drive/THESIS/Data/' + str(dataset)
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + str(dataset) + '_bestModel.h5'
-epochs = 50
+epochs = 1
 
 
 
@@ -38,13 +39,13 @@ split_num = 0
 
 for split in splits:
     split_num += 1
-    if os.path.exist('/{}'.format(dataset)):
-        shutil.rmtree('/{}'.format(dataset))
+    if os.path.exists('{}'.format(dataset)):
+        shutil.rmtree('{}'.format(dataset))
     os.mkdir(dataset)
     os.mkdir(os.path.join(dataset,'videos'))    
-    move_train_test(dest='/{}/videos'.format(dataset),data=split)
+    move_train_test(dest='{}/videos'.format(dataset),data=split)
     os.mkdir(os.path.join(dataset,'processed'))
-    convert_dataset_to_npy(src='/{}/videos'.format(dataset),dest='/{}/processed'.format(dataset),crop_x_y=crop_dark[dataset])
+    convert_dataset_to_npy(src='{}/videos'.format(dataset),dest='{}/processed'.format(dataset),crop_x_y=crop_dark[dataset])
     
     train_generator = DataGenerator(directory='{}/processed/train'.format(dataset), 
                                         batch_size=batch_size, 
@@ -64,9 +65,9 @@ for split in splits:
     print('new model created')
     print(model.summary())
 
-    optimizer = RMSprop(lr=7e-05)
+    optimizer = RMSprop(lr=5e-05)
     model.compile(optimizer=optimizer, loss='binary_crossentropy',metrics=['acc'])
-    modelcheckpoint = ModelCheckpoint(bestModelPath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto', period=1)    
+    modelcheckpoint = ModelCheckpoint(bestModelPath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto', save_freq='epoch')    
 
     history = model.fit(
         steps_per_epoch=len(train_generator),
@@ -85,14 +86,10 @@ for split in splits:
         )
     history_to_save = history.history
     history_on_each_split.append(history_to_save)
-    savePath = '/gdrive/My Drive/THESIS/Data/' + str(dataset)
     save_plot_history(history=history_to_save, save_path= savePath,split_num=split_num)
     
 
-historyFile = str(dataset) + '_historyOnEachSplit.pickle'
-try:
-    file_ = open(historyFile, 'wb')
-    pickle.dump(history_on_each_split, file_)
-    print('saved', historyFile)
-except Exception as e:
-    print(e)
+save_history_as_pickle(file_=history_on_each_split, path_=savePath, dataset_=dataset)
+
+evaluate_accuracy_method1(file_=history_on_each_split)
+evaluate_accuracy_method2(file_=history_on_each_split)

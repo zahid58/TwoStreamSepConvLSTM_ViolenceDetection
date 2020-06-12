@@ -38,7 +38,7 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
     x = Dense(128,activation='relu')(x)
     x = Dropout(0.2)(x)
 
-    x = Dense(10,activation='relu')(x)
+    x = Dense(16,activation='relu')(x)
     x = Dropout(0.1)(x)
 
     activation = 'sigmoid'
