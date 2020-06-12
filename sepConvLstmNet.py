@@ -25,28 +25,28 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
         layer.trainable = True
  
     cnn = TimeDistributed(cnn)(image_input)
-    
-    lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='valid', return_sequences=True)(cnn)
-    lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='valid', return_sequences=True)(lstm)
+    cnn = TimeDistributed(MaxPooling2D(pool_size=(2,2)))(cnn)
+
+    lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=True)(cnn)
     lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=False)(lstm)
+
+    # we can use it for elementwise maxpooling / mean pooling
+    # time_distributed_merge_layer = Lambda(function=lambda x: K.mean(x, axis=1), output_shape=lambda shape: (shape[0],) + shape[2:])
 
     lstm = Flatten()(lstm)
     x = BatchNormalization()(lstm)
 
-    x = Dense(512, activation='relu')(x)
-    x = Dropout(0.4)(x)
+    dropout = 0.4
     x = Dense(128, activation='relu')(x)
-    x=Dropout(0.4)(x)
+    x = Dropout(dropout)(x)
     x = Dense(16, activation='relu')(x)
-    x = Dropout(0.4)(x)
+    x = Dropout(dropout)(x)
 
     activation = 'sigmoid'
     
     if  activation == 'sigmoid':
-        loss_func = 'binary_crossentropy'
         predictions = Dense(1, activation=activation)(x)
     elif  activation == 'softmax':
-        loss_func = 'categorical_crossentropy'
         predictions = Dense(2,  activation=activation)(x)
 
     model = Model(inputs=[image_input], outputs=predictions)
