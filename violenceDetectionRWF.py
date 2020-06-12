@@ -36,14 +36,13 @@ input_frame_size = 224
 preprocess_data = False
 
 create_new_model = True
-
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_bestModel.h5'
 
 bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
 
-epochs = 25
+epochs = 40
 
 learning_rate = None   
 

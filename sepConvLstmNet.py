@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Dense, Flatten, Dropout, ZeroPadding3D, Conv
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import TimeDistributed
 from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.layers import ELU, ReLU, LeakyReLU, Lambda, Dense, Bidirectional, GlobalAveragePooling2D, Multiply, MaxPooling2D, Concatenate, Add, AveragePooling2D 
+from tensorflow.keras.layers import ELU, ReLU, LeakyReLU, Lambda, Dense, Bidirectional, Conv3D, GlobalAveragePooling2D, Multiply, MaxPooling3D, MaxPooling2D, Concatenate, Add, AveragePooling2D 
 from tensorflow.keras.initializers import glorot_uniform, he_normal
 from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
@@ -116,34 +116,37 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     """
     image_input = Input(shape=(seq_len, size, size, 3),name='Input')
     
-    cnn = MobileNetV2(input_shape=(size,size,3),weights='imagenet',include_top=False)
-    cnn = Model(inputs=[cnn.layers[0].input],outputs=[cnn.layers[-4].output]) # removing last 3 layers
+    cnn = MobileNetV2( input_shape=(size,size,3), alpha=0.5, weights='imagenet', include_top=False)
+    cnn = Model(inputs=[cnn.layers[0].input],outputs=[cnn.layers[-30].output]) # taking only upto block 13
 
     print('> cnn_trainable : ', cnn_trainable)
     for layer in cnn.layers:
         layer.trainable = cnn_trainable
  
     cnn = TimeDistributed( cnn,name='CNN' )(image_input)
-    cnn = TimeDistributed( BatchNormalization(axis=3),name='batch_norm' )(cnn)
-    cnn = TimeDistributed( LeakyReLU(alpha=0.3) ,name='leaky_relu' )(cnn)
-    cnn = TimeDistributed( Dropout(0.3) ,name='dropout' )(cnn)
+    cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_' )(cnn)
+    cnn = TimeDistributed( Dropout(0.2) ,name='dropout' )(cnn)
   
-    lstm = SepConvLSTM2D( filters = 256, kernel_size=(3, 3), padding='valid', return_sequences=True, dropout=0.3, recurrent_dropout=0.3, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(cnn)
-    lstm = BatchNormalization( axis = 4 )(lstm)
-    lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='valid', return_sequences=True, dropout=0.3, recurrent_dropout=0.3, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay) )(lstm)
-    lstm = BatchNormalization( axis = 4 )(lstm)
+    lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=0.4, recurrent_dropout=0.4, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(cnn)
+    lstm_0 = BatchNormalization( axis = 4 )(lstm)
 
-
-    # temporal mean pooling
-    TimeDistributedMean = Lambda(function=lambda x: K.mean(x, axis=1), output_shape=lambda shape: (shape[0],) + shape[2:] , name='TemporalMeanPooling')
-    lstm = TimeDistributedMean(lstm)
-
-    x = Flatten()(lstm)
+    x = Conv3D(
+        64, kernel_size=(1,3,3), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same',kernel_regularizer=l2(weight_decay))(lstm)
+   
+    x = MaxPooling3D(pool_size=(8,1,1))(x)
     
+    x = Conv3D(
+        64, kernel_size=(3,1,1), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same',kernel_regularizer=l2(weight_decay))(x)
+  
+    x = MaxPooling3D(pool_size=(2,2,2))(x)
+
+    x = Conv3D(
+        128, kernel_size=(1,3,3), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same',kernel_regularizer=l2(weight_decay))(x)
+    
+    x = MaxPooling3D(pool_size=(1,3,3))(x)
+
+    x = Flatten()(x)
     dropout = 0.4
-    x = Dense(256)(x)
-    x = ELU(alpha=0.3)(x)
-    x = Dropout(dropout)(x)
     x = Dense(128)(x)
     x = LeakyReLU(alpha=0.3)(x)
     x = Dropout(dropout)(x)
@@ -151,7 +154,6 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     x = LeakyReLU(alpha=0.2)(x)
     x = Dropout(dropout)(x)
     predictions = Dense(1, activation='sigmoid')(x)
-
     model = Model(inputs=[image_input], outputs=predictions)
     return model
 

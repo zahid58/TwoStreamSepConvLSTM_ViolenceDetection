@@ -1,11 +1,13 @@
 from tensorflow.keras.utils import Sequence, to_categorical
 from tensorflow.keras.preprocessing.image import apply_affine_transform, apply_brightness_shift
+import tensorflow as tf
 import numpy as np
 import os
 from time import time
 import cv2
 import random
-
+import scipy
+from videoAugmentator import *
 
 class DataGenerator(Sequence):
     """Data Generator inherited from keras.utils.Sequence
@@ -135,7 +137,7 @@ class DataGenerator(Sequence):
         start_point = np.random.randint(len(video)-target_frames)
         return video[start_point:start_point+target_frames]
 
-    def color_jitter(self, video, prob=0.5):
+    def color_jitter(self, video, prob=1):
         # range of s-component: 0-1
         # range of v component: 0-255
         s = np.random.rand()
@@ -260,32 +262,31 @@ class DataGenerator(Sequence):
             video[i] = x
         return video
 
-    def dynamic_crop(self, video):
-        # extract layer of optical flow from video
-        opt_flows = video[..., 3]
-        # sum of optical flow magnitude of individual frame
-        magnitude = np.sum(opt_flows, axis=0)
-        # filter slight noise by threshold
-        thresh = np.mean(magnitude)
-        magnitude[magnitude < thresh] = 0
-        # calculate center of gravity of magnitude map and adding 0.001 to avoid empty value
-        x_pdf = np.sum(magnitude, axis=1) + 0.001
-        y_pdf = np.sum(magnitude, axis=0) + 0.001
-        # normalize PDF of x and y so that the sum of probs = 1
-        x_pdf /= np.sum(x_pdf)
-        y_pdf /= np.sum(y_pdf)
-        # randomly choose some candidates for x and y
-        x_points = np.random.choice(a=np.arange(
-            56, 168), size=10, replace=True, p=x_pdf)
-        y_points = np.random.choice(a=np.arange(
-            56, 168), size=10, replace=True, p=y_pdf)
-        # get the mean of x and y coordinates for better robustness
-        x = int(np.mean(x_points))
-        y = int(np.mean(y_points))
-        # get cropped video
-        return video[:, x-56:x+56, y-56:y+56, :]
-    
-    
+    def gaussian_blur(self, video, prob=0.5, low=1, high=2):
+        s = np.random.rand()
+        if s > prob:
+            return video
+        sigma = np.random.rand()*(high-low) + low    
+        return GaussianBlur(sigma = sigma)(video)    
+
+    def elastic_transformation(self, video, prob=0.5,alpha=0):
+        s = np.random.rand()
+        if s > prob:
+            return video
+        return ElasticTransformation(alpha=alpha)(video)   
+
+    def piecewise_affine_transform(self, video, prob=0.5,displacement=3, displacement_kernel=3, displacement_magnification=2):
+        s = np.random.rand()
+        if s > prob:
+            return video
+        return PiecewiseAffineTransform(displacement=displacement, displacement_kernel=displacement_kernel, displacement_magnification=displacement_magnification)(video)
+
+    def superpixel(self, video, prob=0.5, p_replace=0, n_segments=0):
+        s = np.random.rand()
+        if s > prob:
+            return video
+        return Superpixel(p_replace=p_replace,n_segments=n_segments)(video)    
+
     def resize_frames(self, video):
         resized = []
         for i in range(video.shape[0]):
@@ -294,6 +295,8 @@ class DataGenerator(Sequence):
             resized.append(x)
         return np.array(resized)
     
+    def dynamic_crop(self, video, opt_flows):
+        return DynamicCrop()(video, opt_flows)
     
     def random_crop(self, video, prob=0.5):
         s = np.random.rand()
@@ -316,8 +319,57 @@ class DataGenerator(Sequence):
         out.append(video[num_frames-1] - video[num_frames-2])
         return np.array(out,dtype=np.float32)
 
+    def pepper(self, video, prob = 0.5, ratio = 100):
+        s = np.random.rand()
+        if s > prob:
+            return video
+        return Pepper(ratio=ratio)(video)
+
+    def salt(self, video, prob = 0.5, ratio = 100):
+        s = np.random.rand()
+        if s > prob:
+            return video
+        return Salt(ratio=ratio)(video)            
+
+    def inverse_order(self, video, prob = 0.5):
+        s = np.random.rand()
+        if s > prob:
+            return video
+        return InverseOrder()(video)    
+
+    def downsample(self, video):
+        video = Downsample(ratio=0.5)(video)
+        return np.concatenate((video, video), axis = 0)
+
+    def upsample(self, video):
+        num_frames = len(video)    
+        video = Upsample(ratio=2)(video)
+        s = np.random.randint(0,1)
+        if s:
+            return video[:num_frames]
+        else:
+            return video[num_frames:]
+
+    def upsample_downsample(self, video, prob=0.5):
+        s = np.random.rand()
+        if s>prob:
+            return video
+        s = np.random.randint(0,1)
+        if s:
+            return self.upsample(video)
+        else:
+            return self.downsample(video)          
+
+    def temporal_elastic_transformation(self, video, prob=0.5):
+        s = np.random.rand()
+        if s > prob:
+            return video
+        num_frames = len(video)    
+        return TemporalElasticTransformation()(video)
+           
 
     def load_data(self, path):
+
         # load the processed .npy files
         data = np.load(path, mmap_mode='r')
         data = np.float32(data)
@@ -325,6 +377,7 @@ class DataGenerator(Sequence):
         if self.sample:
             data = self.uniform_sampling(
                 video=data, target_frames=self.target_frames)
+
         # data augmentation
         if self.data_aug:
             data = self.random_brightness(data, (0.5, 1.5))
@@ -332,10 +385,19 @@ class DataGenerator(Sequence):
             data = self.random_flip(data, prob=0.50)
             data = self.random_crop(data, prob=0.80)
             data = self.random_rotation(data, rg=25, prob=1)
+            data = self.gaussian_blur(data,prob=0.5,low=1,high=2) 
+            data = self.elastic_transformation(data,prob=0.5,alpha=1.5)
+            data = self.piecewise_affine_transform(data,prob=0.5)
+            data = self.pepper(data,prob=0.5,ratio=40)
+            data = self.salt(data,prob=0.5,ratio=40)
+            data = self.inverse_order(data,prob=0.15)
+            data = self.upsample_downsample(data,prob=0.5)
+            data = self.temporal_elastic_transformation(data,prob=0.5)
         else:
             # center cropping only for test generators
             data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
-              
+
+        data = np.array(data, dtype=np.float32)       
         assert (data.shape == (self.target_frames,self.resize, self.resize,3))
         # normalize  images
         data = self.normalize(data)
