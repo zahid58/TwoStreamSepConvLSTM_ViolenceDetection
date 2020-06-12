@@ -3,6 +3,7 @@ from customLayers import SepConvLSTM2D
 import pickle
 import shutil
 import sepConvLstmNet
+import rwfRGBonly
 from utils import *
 from dataGenerator import *
 from datasetProcess import *
@@ -33,7 +34,7 @@ input_frame_size = 224
 
 preprocess_data = False
 
-create_new_model = False
+create_new_model = True
 
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_bestModel.h5'
@@ -41,9 +42,9 @@ bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
 bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
 
-epochs = 15
+epochs = 45
 
-learning_rate = 5e-05
+learning_rate = None   
 
 ###################################################
 
@@ -57,7 +58,7 @@ train_generator = DataGenerator(directory='{}/processed/train'.format(dataset),
                                 batch_size=batch_size,
                                 data_augmentation=True,
                                 shuffle=True,
-                                one_hot=False,
+                                one_hot=True,
                                 sample=False,
                                 resize=input_frame_size,
                                 target_frames = vid_len)
@@ -66,7 +67,7 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                batch_size=batch_size,
                                data_augmentation=False,
                                shuffle=True,
-                               one_hot=False,
+                               one_hot=True,
                                sample=False,
                                resize=input_frame_size,
                                target_frames = vid_len)
@@ -75,17 +76,18 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
 
 if create_new_model:
     print('> creating new model...')
-    model = sepConvLstmNet.getModel(
-        size=input_frame_size, seq_len=vid_len, cnn_weight='imagenet')
-    optimizer = Adam(lr=initial_learning_rate)
-    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['acc'])
+    model = rwfRGBonly.getModel(
+        size=input_frame_size, seq_len=vid_len)
+    optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
+    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['acc'])
     print('> Dropout on FC layer : ', model.layers[-2].rate)
     print('> new model created')
 else:
     print('> getting the model from...', bestModelPath)
     model = load_model(bestModelPath, custom_objects={
-                       'SepConvLSTM2D': SepConvLSTM2D})
-    K.set_value(model.optimizer.lr, learning_rate)
+                      'SepConvLSTM2D': SepConvLSTM2D})
+    if learning_rate is not None:
+        K.set_value(model.optimizer.lr, learning_rate)
     print('> Dropout on FC layer : ', model.layers[-2].rate)
 
 print(model.summary())
@@ -101,7 +103,7 @@ modelcheckpointVal = ModelCheckpoint(
 def lr_scheduler(epoch, lr):
     decay_rate = 0.5
     decay_step = 5
-    if epoch % decay_step == 0 and epoch:
+    if epoch % decay_step == 0 and epoch and lr>6e-05:
         return lr * decay_rate
     return lr
 
@@ -115,13 +117,13 @@ history = model.fit(
     workers=8,
     max_queue_size=8,
     use_multiprocessing=False,
-    callbacks=[#EarlyStopping(monitor='val_loss', min_delta=0.001, patience=65),
-               #ReduceLROnPlateau(monitor='loss', factor=0.5,
-               #                  patience=2, min_lr=1e-8, verbose=1),
-               #LearningRateScheduler(lr_scheduler, verbose = 1),
-               modelcheckpoint,
-               modelcheckpointVal
-               ]
+    callbacks=[ # EarlyStopping(monitor='val_loss', min_delta=0.001, patience=650),
+                # ReduceLROnPlateau(monitor='loss', factor=0.5,
+                #                  patience=2, min_lr=1e-8, verbose=1),
+                LearningRateScheduler(lr_scheduler, verbose = 0),
+                modelcheckpoint,
+                modelcheckpointVal
+              ]
 )
 
 #----------------------------------------------------------

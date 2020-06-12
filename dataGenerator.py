@@ -310,13 +310,18 @@ class DataGenerator(Sequence):
         # get cropped video
         return video[:, x-112:x+112, y-112:y+112, :]
 
+    def frame_difference(self, video):
+        num_frames = video.shape[0]
+        out = [ video[i+1]-video[i]  for i in range(num_frames-1) ]
+        out.append(video[num_frames-1] - video[num_frames-2])
+        return np.array(out,dtype=np.float32)
 
 
     def load_data(self, path):
         # load the processed .npy files
         data = np.load(path, mmap_mode='r')
         data = np.float32(data)
-        # sampling 20 frames uniformly from the entire video
+        # sampling frames uniformly from the entire video
         if self.sample:
             data = self.uniform_sampling(
                 video=data, target_frames=self.target_frames)
@@ -330,6 +335,7 @@ class DataGenerator(Sequence):
         else:
             # center cropping only for test generators
             data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
+              
         assert (data.shape == (self.target_frames,self.resize, self.resize,3))
         # normalize  images
         data = self.normalize(data)
