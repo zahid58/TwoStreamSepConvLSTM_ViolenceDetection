@@ -27,7 +27,7 @@ batch_size = 4   #4
 vid_len = 20   #10
 frame_size = 224
 
-preprocess_data = False #######
+preprocess_data = True  #######
 split_number = 1   #[1,2,3,4,5,6]
 create_new_model = True  #######
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + str(dataset) + '_bestModel.h5'

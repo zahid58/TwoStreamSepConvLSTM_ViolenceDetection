@@ -9,12 +9,12 @@ set_seed(42)
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback, ModelCheckpoint
 from tensorflow.keras.optimizers import RMSprop, Adam
 from tensorflow.keras.models import load_model
+from tensorflow import set_random_seed  
 from datasetProcess import *
 from dataGenerator import *
 from utils import *
 import sepConvLstmNet
 import shutil
-import pickle
 
 dataset = 'hockey'
 dataset_videos = {'hockey':'raw_videos/hockey','movies':'raw_videos/movies'}
