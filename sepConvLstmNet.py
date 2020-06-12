@@ -30,14 +30,14 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
     flat = Flatten()(lstm)
     x = BatchNormalization()(flat)
     
-    x = Dense(512,activation = 'relu')(x)
-    x = Dropout(0.2)(x)
+    x = Dense(768,activation = 'relu')(x)
+    x = Dropout(0.3)(x)
     
     x = Dense(256,activation='relu')(x)
-    x = Dropout(0.2)(x)
+    x = Dropout(0.3)(x)
 
     x = Dense(10,activation='relu')(x)
-    x = Dropout(0.1)(x)
+    x = Dropout(0.2)(x)
 
     activation = 'sigmoid'
     
