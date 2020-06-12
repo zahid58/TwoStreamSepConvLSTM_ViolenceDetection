@@ -322,11 +322,11 @@ class DataGenerator(Sequence):
                 video=data, target_frames=self.target_frames)
         # data augmentation
         if self.data_aug:
-            data = self.random_brightness(data, (0.6, 1.4))
-            data = self.color_jitter(data, prob = .90)
+            data = self.random_brightness(data, (0.5, 1.5))
+            data = self.color_jitter(data, prob = 1)
             data = self.random_flip(data, prob=0.50)
             data = self.random_crop(data, prob=0.80)
-            data = self.random_rotation(data, rg=25, prob=0.80)
+            data = self.random_rotation(data, rg=25, prob=1)
         else:
             # center cropping only for test generators
             data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)

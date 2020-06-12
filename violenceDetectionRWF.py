@@ -8,7 +8,8 @@ from dataGenerator import *
 from datasetProcess import *
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import RMSprop, Adam
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback, ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback, ModelCheckpoint,LearningRateScheduler
+from tensorflow.python.keras import backend as K
 from tensorflow.random import set_seed
 import os
 import pandas as pd
@@ -16,23 +17,35 @@ from numpy.random import seed, shuffle
 seed(42)
 random.seed(42)
 set_seed(42)
+#-----------------------------------
 
+initial_learning_rate = 4e-04
 dataset = 'rwf2000'
-
 crop_dark = {
     'rwf2000': (0, 0),
 }
-
 batch_size = 4
 vid_len = 32
 dataset_frame_size = 320
 input_frame_size = 224
 
+###################################################
+
 preprocess_data = False
-create_new_model = True
+
+create_new_model = False
+
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_bestModel.h5'
-epochs = 50
+
+bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
+    str(dataset) + '_best_val_acc_Model.h5'   
+
+epochs = 15
+
+learning_rate = 5e-05
+
+###################################################
 
 if preprocess_data:
     os.mkdir(os.path.join(dataset, 'processed'))
@@ -58,24 +71,39 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                resize=input_frame_size,
                                target_frames = vid_len)
 
-model = None
+#--------------------------------------------------
+
 if create_new_model:
-    print('creating new model...')
+    print('> creating new model...')
     model = sepConvLstmNet.getModel(
         size=input_frame_size, seq_len=vid_len, cnn_weight='imagenet')
-    print('new model created')
+    optimizer = Adam(lr=initial_learning_rate)
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['acc'])
+    print('> Dropout on FC layer : ', model.layers[-2].rate)
+    print('> new model created')
 else:
-    print('getting the model from ', bestModelPath)
+    print('> getting the model from...', bestModelPath)
     model = load_model(bestModelPath, custom_objects={
                        'SepConvLSTM2D': SepConvLSTM2D})
-    print('got the model')
-    print('Dropout : ', model.layers[-2].rate)
-print(model.summary())
+    K.set_value(model.optimizer.lr, learning_rate)
+    print('> Dropout on FC layer : ', model.layers[-2].rate)
 
-optimizer = Adam(lr=5e-04)
-model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['acc'])
+print(model.summary())
+print('> optimizer : ', model.optimizer.get_config())
+
+#--------------------------------------------------
+
 modelcheckpoint = ModelCheckpoint(
     bestModelPath, monitor='loss', verbose=0, save_best_only=False, mode='auto', save_freq='epoch')
+modelcheckpointVal = ModelCheckpoint(
+    bestValPath, monitor='val_acc', verbose=0, save_best_only=True, mode='auto', save_freq='epoch')
+
+def lr_scheduler(epoch, lr):
+    decay_rate = 0.5
+    decay_step = 5
+    if epoch % decay_step == 0 and epoch:
+        return lr * decay_rate
+    return lr
 
 history = model.fit(
     steps_per_epoch=len(train_generator),
@@ -87,12 +115,16 @@ history = model.fit(
     workers=8,
     max_queue_size=8,
     use_multiprocessing=False,
-    callbacks=[EarlyStopping(monitor='val_loss', min_delta=0.001, patience=65),
-               ReduceLROnPlateau(monitor='loss', factor=0.5,
-                                 patience=3, min_lr=1e-8, verbose=1),
-               modelcheckpoint
+    callbacks=[#EarlyStopping(monitor='val_loss', min_delta=0.001, patience=65),
+               #ReduceLROnPlateau(monitor='loss', factor=0.5,
+               #                  patience=2, min_lr=1e-8, verbose=1),
+               #LearningRateScheduler(lr_scheduler, verbose = 1),
+               modelcheckpoint,
+               modelcheckpointVal
                ]
 )
+
+#----------------------------------------------------------
 
 history_to_save = history.history
 savePath = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'

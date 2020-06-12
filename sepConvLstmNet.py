@@ -25,22 +25,20 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
         layer.trainable = True
  
     cnn = TimeDistributed(cnn)(image_input)
-
+    
     lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='valid', return_sequences=True)(cnn)
     lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='valid', return_sequences=True)(lstm)
     lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=False)(lstm)
-        
+
     lstm = Flatten()(lstm)
     x = BatchNormalization()(lstm)
-    
-    x = Dense(512, activation = 'relu')(x) 
-    x = Dropout(0.0)(x)
-    
-    x = Dense(128, activation='relu')(x)
-    x = Dropout(0.0)(x)
 
+    x = Dense(512, activation='relu')(x)
+    x = Dropout(0.4)(x)
+    x = Dense(128, activation='relu')(x)
+    x=Dropout(0.4)(x)
     x = Dense(16, activation='relu')(x)
-    x = Dropout(0.0)(x)
+    x = Dropout(0.4)(x)
 
     activation = 'sigmoid'
     
