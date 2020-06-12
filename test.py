@@ -1,6 +1,8 @@
 import numpy as np
 from utils import evaluate_accuracy_method1, evaluate_accuracy_method2
 
+# just for testing
+
 a = np.arange(10,130,3)
 b = np.arange(70,-10,-2)
 c = np.arange(140,20,-3)
