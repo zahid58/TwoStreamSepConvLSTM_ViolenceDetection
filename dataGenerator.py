@@ -156,7 +156,7 @@ class DataGenerator(Sequence):
         frame_size = np.size(video, axis = 1)
         corner_keys = ["Left_up","Right_down","Right_up","Left_down","Center"]
         corner = random.choice(corner_keys)
-        percentages = [.8,.9,.7]
+        percentages = [.8,.9]
         percentage = random.choice(percentages)
         resize = int(frame_size*percentage)
         if(corner =="Left_up"):
@@ -185,11 +185,11 @@ class DataGenerator(Sequence):
             x_end = frame_size-half
             y_start = half
             y_end = frame_size-half
-        out = []
+        
         for i in range(np.shape(video)[0]):
-            img = cv2.resize(video[i,y_start:y_end,x_start:x_end, :], (frame_size, frame_size)).astype(np.float32)
-            out.append(img)
-        return np.array(out)
+            x = cv2.resize(video[i,y_start:y_end,x_start:x_end, :], (frame_size, frame_size)).astype(np.float32)
+            video[i] = x
+        return video
 
 
     def random_shear(self, video, intensity, prob = 0.5, row_axis=0, col_axis=1, channel_axis=2,
@@ -198,13 +198,12 @@ class DataGenerator(Sequence):
         if s > prob:
             return video
         shear = np.random.uniform(-intensity, intensity)
-        out = []
         for i in range(np.shape(video)[0]):
-            x = apply_affine_transform(video[i,:,:,:], shear=shear, channel_axis=channel_axis,
+            x = apply_affine_transform(video[i], shear=shear, channel_axis=channel_axis,
                                 fill_mode=fill_mode, cval=cval,
                                 order=interpolation_order)
-            out.append(x)
-        return np.array(out)
+            video[i]=x
+        return video
     
 
     def random_shift(self ,video, wrg, hrg, prob =0.5,row_axis=0, col_axis=1, channel_axis=2,
@@ -215,13 +214,12 @@ class DataGenerator(Sequence):
         h, w = video.shape[1], video.shape[2]
         tx = np.random.uniform(-hrg, hrg) * h
         ty = np.random.uniform(-wrg, wrg) * w
-        out = []
         for i in range(np.shape(video)[0]):
-            x = apply_affine_transform(video[i,:,:,:], tx=tx, ty=ty, channel_axis=channel_axis,
+            x = apply_affine_transform(video[i], tx=tx, ty=ty, channel_axis=channel_axis,
                                 fill_mode=fill_mode, cval=cval,
                                 order=interpolation_order)
-            out.append(x)
-        return np.array(out)
+            video[i] = x
+        return video
 
     def random_rotation(self, video, rg, prob =0.5,row_axis=0, col_axis=1, channel_axis=2,
                     fill_mode='nearest', cval=0., interpolation_order=1):
@@ -229,16 +227,15 @@ class DataGenerator(Sequence):
         if s > prob:
             return video        
         theta = np.random.uniform(-rg,rg)
-        out = []
         for i in range(np.shape(video)[0]):
-            x = apply_affine_transform(video[i,:,:,:], theta=theta, channel_axis=channel_axis,
+            x = apply_affine_transform(video[i], theta=theta, channel_axis=channel_axis,
                                 fill_mode=fill_mode, cval=cval,
                                 order=interpolation_order)
-            out.append(x)
-        return np.array(out)
+            video[i] = x
+        return video
 
     def load_data(self, path):
-        # load the processed .npy files which have 5 channels (1-3 for RGB, 4-5 for optical flows)
+        # load the processed .npy files
         data = np.load(path, mmap_mode='r')
         data = np.float32(data)
         # sampling 20 frames uniformly from the entire video
@@ -246,11 +243,11 @@ class DataGenerator(Sequence):
         # whether to utilize the data augmentation
         if  self.data_aug:
             data = self.color_jitter(data, prob=1)
-            data = self.random_flip(data, prob=1)
-            data = self.crop_corner(data, prob=1)
-            data = self.random_shift(data, wrg = .2, hrg= .2, prob = 1)
-            data = self.random_shear(data,intensity=10,prob=1)
-            data = self.random_rotation(data, rg=15, prob=1)
+            data = self.random_flip(data, prob=0.5)
+            data = self.crop_corner(data, prob=0.5)
+            data = self.random_shift(data, wrg = .2, hrg= .2, prob = 0.8)
+            #data = self.random_shear(data,intensity=10,prob=0.4)
+            data = self.random_rotation(data, rg=15, prob=0.7)
         # normalize rgb images 
         data = self.normalize(data)
         return data
