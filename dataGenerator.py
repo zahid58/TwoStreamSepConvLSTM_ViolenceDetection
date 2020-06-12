@@ -314,7 +314,7 @@ class DataGenerator(Sequence):
         return video[:, x-112:x+112, y-112:y+112, :]
 
     def frame_difference(self, video):
-        num_frames = video.shape[0]
+        num_frames = len(video)
         out = [ video[i+1]-video[i]  for i in range(num_frames-1) ]
         out.append(video[num_frames-1] - video[num_frames-2])
         return np.array(out,dtype=np.float32)
@@ -385,22 +385,25 @@ class DataGenerator(Sequence):
             data = self.random_flip(data, prob=0.50)
             data = self.random_crop(data, prob=0.80)
             data = self.random_rotation(data, rg=25, prob=1)
-            data = self.gaussian_blur(data,prob=0.2,low=1,high=2) 
-            data = self.elastic_transformation(data,prob=0.2,alpha=1.5)
-            data = self.piecewise_affine_transform(data,prob=0.2)
-            data = self.pepper(data,prob=0.3,ratio=50)
-            data = self.salt(data,prob=0.3,ratio=50)
             data = self.inverse_order(data,prob=0.1)
             data = self.upsample_downsample(data,prob=0.5)
             data = self.temporal_elastic_transformation(data,prob=0.2)
+            data = self.gaussian_blur(data,prob=0.2,low=1,high=2) 
+            diff_data = self.frame_difference(data)
+            data = self.pepper(data,prob=0.3,ratio=50)
+            data = self.salt(data,prob=0.3,ratio=50)
+            data = np.concatenate((data,diff_data),axis=-1)
         else:
             # center cropping only for test generators
             data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
+            diff_data = self.frame_difference(data)
+            data = np.concatenate((data,diff_data),axis=-1)
 
         data = np.array(data, dtype=np.float32)       
-        assert (data.shape == (self.target_frames,self.resize, self.resize,3))
+        assert (data.shape == (self.target_frames,self.resize, self.resize,6))
         # normalize  images
-        data = self.normalize(data)
+        data[...,:3] = self.normalize(data[...,:3])
+        data[...,3:] = self.normalize(data[...,3:])
         return data
 
 

@@ -98,7 +98,7 @@ else:
     print('> Dropout on FC layer : ', model.layers[-2].rate)
 
 print('> Summary of the model : ')
-model.summary()
+model.summary(line_length=140)
 print('> Optimizer : ', model.optimizer.get_config())
 
 #--------------------------------------------------
