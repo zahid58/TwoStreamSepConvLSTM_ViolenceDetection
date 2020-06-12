@@ -5,13 +5,22 @@ import numpy as np
 import pickle
 
 def save_plot_history(history, save_path,split_num=0):
-    
-    historyInDrivePath = save_path + '_split_'+ str(split_num) +'_history.csv'
+    ###
+    print('saving history in csv format...')
+    historyInDrivePath = save_path + 'split_'+ str(split_num) + '_history.csv'
     pd.DataFrame(history).to_csv(historyInDrivePath) #gdrive
-    pd.DataFrame(history).to_csv('split_'+str(split_num)+'_history.csv')  #local
-
+    pd.DataFrame(history).to_csv('split_'+ str(split_num) + '_history.csv')  #local
+    ###
+    print('saving history in pickle format...')
+    historyFile = save_path + 'split_' + str(split_num) + '_history.pickle'
+    try:
+        file_ = open(historyFile, 'wb')
+        pickle.dump(history, file_)
+        print('saved', historyFile)
+    except Exception as e:
+        print(e)
+    ###
     print('plotting and saving train test graphs...')
-    #print(history.keys())
     # summarize history for accuracy
     plt.figure(figsize=(10, 6))
     plt.plot(history['acc'])
@@ -22,10 +31,7 @@ def save_plot_history(history, save_path,split_num=0):
     plt.legend(['train', 'test'], loc='upper left')
     plt.grid(True)
     plt.savefig('split_'+str(split_num)+'_accuracy.png',bbox_inches='tight') #local
-    plt.savefig(save_path+'accuracy.png',bbox_inches='tight') #gdrive
-    
-
-    
+    plt.savefig( save_path + 'split_'+ str(split_num) + '_accuracy.png',bbox_inches='tight') #gdrive
     # summarize history for loss
     plt.figure(figsize=(10, 6))
     plt.plot(history['loss'])
@@ -36,20 +42,10 @@ def save_plot_history(history, save_path,split_num=0):
     plt.legend(['train', 'test'], loc='upper left')
     plt.grid(True)
     plt.savefig('split_'+str(split_num)+'_loss.png',bbox_inches='tight')  #local
-    plt.savefig(save_path+'loss.png',bbox_inches='tight')  #gdrive
+    plt.savefig( save_path + 'split_'+ str(split_num) + '_loss.png',bbox_inches='tight')  #gdrive
+    ###
 
-def save_history_as_pickle(file_, path_, dataset_):
-    local_path = str(dataset_) + '_historyOnEachSplit.pickle'
-    drive_path = path_ + '_historyOnEachSplit.pickle'
-    try:
-        with open(local_path, 'wb') as fp:
-            pickle.dump(file_, fp)
-        print('saved', local_path)
-        with open(drive_path, 'wb') as fp:
-            pickle.dump(drive_path, fp)
-        print('saved', drive_path)
-    except Exception as e:
-        print(e)
+
 
 def evaluate_accuracy_method1(file_):
     test_acc = []
@@ -70,6 +66,8 @@ def evaluate_accuracy_method1(file_):
     print('final accuracy :',np.mean(hundred_acc),'±',np.std(hundred_acc))
     print('--------------------------------------------')
 
+
+
 def evaluate_accuracy_method2(file_):
     test_acc = []
     for history in file_:
@@ -84,11 +82,3 @@ def evaluate_accuracy_method2(file_):
     print('final accuracy :',np.mean(max_test_acc_fold),'±',np.std(max_test_acc_fold))
     print('--------------------------------------------')
 
-
-
-
-def remove_data(dataset):
-    print('removing the data folders...')
-    shutil.rmtree('/{}/videos'.format(dataset))
-    shutil.rmtree('/{}/processed'.format(dataset))
-    print('work on split number',split_num,'done!')

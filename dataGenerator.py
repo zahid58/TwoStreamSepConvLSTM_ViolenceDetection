@@ -1,10 +1,11 @@
 from tensorflow.keras.utils import Sequence, to_categorical
-from tensorflow.keras.preprocessing.image import apply_affine_transform
+from tensorflow.keras.preprocessing.image import apply_affine_transform, apply_brightness_shift
 import numpy as np
 import os
 from time import time
 import cv2
 import random
+
 
 class DataGenerator(Sequence):
     """Data Generator inherited from keras.utils.Sequence
@@ -15,7 +16,8 @@ class DataGenerator(Sequence):
     Note:
         If you want to load file with other data format, please fix the method of "load_data" as you want
     """
-    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True,one_hot=False,target_frames=20):
+
+    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=True, resize=224):
         # Initialize the params
         self.batch_size = batch_size
         self.directory = directory
@@ -23,30 +25,32 @@ class DataGenerator(Sequence):
         self.data_aug = data_augmentation
         self.one_hot = one_hot
         self.target_frames = target_frames
+        self.sample = sample
+        self.resize = resize
         # Load all the save_path of files, and create a dictionary that save the pair of "data:label"
-        self.X_path, self.Y_dict = self.search_data() 
+        self.X_path, self.Y_dict = self.search_data()
         # Print basic statistics information
         self.print_stats()
         return None
-        
+
     def search_data(self):
         X_path = []
         Y_dict = {}
         # list all kinds of sub-folders
         self.dirs = sorted(os.listdir(self.directory))
         one_hots = to_categorical(range(len(self.dirs)))
-        for i,folder in enumerate(self.dirs):
-            folder_path = os.path.join(self.directory,folder)
+        for i, folder in enumerate(self.dirs):
+            folder_path = os.path.join(self.directory, folder)
             for file in os.listdir(folder_path):
-                file_path = os.path.join(folder_path,file)
-                # append the each file path, and keep its label  
+                file_path = os.path.join(folder_path, file)
+                # append the each file path, and keep its label
                 X_path.append(file_path)
                 if self.one_hot:
                     Y_dict[file_path] = one_hots[i]
                 else:
                     Y_dict[file_path] = i
         return X_path, Y_dict
-    
+
     def print_stats(self):
         # calculate basic information
         self.n_files = len(self.X_path)
@@ -54,11 +58,12 @@ class DataGenerator(Sequence):
         self.indexes = np.arange(len(self.X_path))
         np.random.shuffle(self.indexes)
         # Output states
-        print("Found {} files belonging to {} classes.".format(self.n_files,self.n_classes))
-        for i,label in enumerate(self.dirs):
-            print('%10s : '%(label),i)
+        print("Found {} files belonging to {} classes.".format(
+            self.n_files, self.n_classes))
+        for i, label in enumerate(self.dirs):
+            print('%10s : ' % (label), i)
         return None
-    
+
     def __len__(self):
         # calculate the iterations of each epoch
         steps_per_epoch = np.ceil(len(self.X_path) / float(self.batch_size))
@@ -68,7 +73,8 @@ class DataGenerator(Sequence):
         """Get the data of each batch
         """
         # get the indexs of each batch
-        batch_indexs = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        batch_indexs = self.indexes[index *
+                                    self.batch_size:(index+1)*self.batch_size]
         # using batch_indexs to get path of current batch
         batch_path = [self.X_path[k] for k in batch_indexs]
         # get batch data
@@ -88,79 +94,90 @@ class DataGenerator(Sequence):
         batch_x = np.array(batch_x)
         batch_y = np.array(batch_y)
         return batch_x, batch_y
-      
+
     def normalize(self, data):
         data = (data / 255.0).astype(np.float32)
         mean = np.mean(data)
         std = np.std(data)
-        #mean = [0.485, 0.456, 0.406]
-        #std = [0.229, 0.224, 0.225]
         return (data-mean) / std
-    
+        #mean = np.mean(data, axis=tuple(range(data.ndim-1)))
+        #std = np.std(data, axis=tuple(range(data.ndim-1))) + 1e-8
+        # return ((data-mean)/std)
+
     def random_flip(self, video, prob):
         s = np.random.rand()
         if s < prob:
             video = np.flip(m=video, axis=2)
-        return video    
-    
+        return video
+
     def uniform_sampling(self, video, target_frames=20):
-        # get total frames of input video and calculate sampling interval 
+        # get total frames of input video and calculate sampling interval
         len_frames = video.shape[0]
         interval = int(np.ceil(len_frames/target_frames))
-        # init empty list for sampled video and 
+        # init empty list for sampled video and
         sampled_video = []
-        for i in range(0,len_frames,interval):
-            sampled_video.append(video[i])     
-        # calculate numer of padded frames and fix it 
+        for i in range(0, len_frames, interval):
+            sampled_video.append(video[i])
+        # calculate numer of padded frames and fix it
         num_pad = target_frames - len(sampled_video)
         padding = []
-        if num_pad>0:
-            for i in range(-num_pad,0):
-                try: 
+        if num_pad > 0:
+            for i in range(-num_pad, 0):
+                try:
                     padding.append(video[i])
                 except:
                     padding.append(video[0])
-            sampled_video += padding     
+            sampled_video += padding
         # get sampled video
         return np.array(sampled_video, dtype=np.float32)
-    
+
     def random_clip(self, video, target_frames=20):
         start_point = np.random.randint(len(video)-target_frames)
         return video[start_point:start_point+target_frames]
-            
-    def color_jitter(self,video,prob=0.5):
+
+    def color_jitter(self, video, prob=0.5):
         # range of s-component: 0-1
         # range of v component: 0-255
         s = np.random.rand()
         if s > prob:
             return video
-        s_jitter = np.random.uniform(-0.2,0.2)
-        v_jitter = np.random.uniform(-30,30)
+        s_jitter = np.random.uniform(-0.3, 0.3)  # (-0.2,0.2)
+        v_jitter = np.random.uniform(-40, 40)  # (-30,30)
         for i in range(len(video)):
-            hsv = cv2.cvtColor(video[i], cv2.COLOR_BGR2HSV)
-            s = hsv[...,1] + s_jitter
-            v = hsv[...,2] + v_jitter
-            s[s<0] = 0
-            s[s>1] = 1
-            v[v<0] = 0
-            v[v>255] = 255
-            hsv[...,1] = s
-            hsv[...,2] = v
-            video[i] = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+            hsv = cv2.cvtColor(video[i], cv2.COLOR_RGB2HSV)
+            s = hsv[..., 1] + s_jitter
+            v = hsv[..., 2] + v_jitter
+            s[s < 0] = 0
+            s[s > 1] = 1
+            v[v < 0] = 0
+            v[v > 255] = 255
+            hsv[..., 1] = s
+            hsv[..., 2] = v
+            video[i] = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
         return video
 
+    def crop_center(self, video, x_crop=10, y_crop=30):
+        frame_size = np.size(video, axis=1)
+        x = frame_size
+        y = frame_size
+        x_start = x_crop
+        x_end = x - x_crop
+        y_start = y_crop
+        y_end = y-y_crop
+        video = video[:, y_start:y_end, x_start:x_end, :]
+        return video
 
-    def crop_corner(self, video ,prob=0.5):
+    def crop_corner(self, video, prob=0.5, crop_range=(.65, .85)):
         s = np.random.rand()
         if s > prob:
             return video
-        frame_size = np.size(video, axis = 1)
-        corner_keys = ["Left_up","Right_down","Right_up","Left_down","Center"]
+        frame_size = np.size(video, axis=1)
+        corner_keys = ["Left_up", "Right_down",
+                       "Right_up", "Left_down", "Center"]
         corner = random.choice(corner_keys)
-        percentages = [.85,.75]
-        percentage = random.choice(percentages)
+        percentage = np.random.uniform(crop_range[0], crop_range[1])
         resize = int(frame_size*percentage)
-        if(corner =="Left_up"):
+        if(corner == "Left_up"):
             x_start = 0
             x_end = resize
             y_start = 0
@@ -170,7 +187,7 @@ class DataGenerator(Sequence):
             x_end = frame_size
             y_start = frame_size-resize
             y_end = frame_size
-        if(corner =="Right_up"):
+        if(corner == "Right_up"):
             x_start = 0
             x_end = resize
             y_start = frame_size-resize
@@ -181,92 +198,151 @@ class DataGenerator(Sequence):
             y_start = 0
             y_end = resize
         if (corner == "Center"):
-            half = int(frame_size*(1-percentage))
+            half = int(frame_size*(1-percentage)/2.0)
             x_start = half
             x_end = frame_size-half
             y_start = half
             y_end = frame_size-half
-        for i in range(video.shape[0]):
-            img = cv2.resize(video[i,y_start:y_end,x_start:x_end, :], (frame_size, frame_size)).astype(np.float32)
-            video[i] = img
+        video = video[:, y_start:y_end, x_start:x_end, :]
         return video
 
-
-    def random_shear(self, video, intensity, prob = 0.5, row_axis=0, col_axis=1, channel_axis=2,
-                    fill_mode='nearest', cval=0., interpolation_order=1):
+    def random_shear(self, video, intensity, prob=0.5, row_axis=0, col_axis=1, channel_axis=2,
+                     fill_mode='nearest', cval=0., interpolation_order=1):
         s = np.random.rand()
         if s > prob:
             return video
         shear = np.random.uniform(-intensity, intensity)
-        
+
         for i in range(video.shape[0]):
-            x = apply_affine_transform(video[i,:,:,:], shear=shear, channel_axis=channel_axis,
-                                fill_mode=fill_mode, cval=cval,
-                                order=interpolation_order)
+            x = apply_affine_transform(video[i, :, :, :], shear=shear, channel_axis=channel_axis,
+                                       fill_mode=fill_mode, cval=cval,
+                                       order=interpolation_order)
             video[i] = x
         return video
-    
 
-    def random_shift(self, video, wrg, hrg, prob =0.5,row_axis=0, col_axis=1, channel_axis=2,
-                    fill_mode='nearest', cval=0., interpolation_order=1):
+    def random_shift(self, video, wrg, hrg, prob=0.5, row_axis=0, col_axis=1, channel_axis=2,
+                     fill_mode='nearest', cval=0., interpolation_order=1):
         s = np.random.rand()
         if s > prob:
-            return video        
+            return video
         h, w = video.shape[1], video.shape[2]
         tx = np.random.uniform(-hrg, hrg) * h
         ty = np.random.uniform(-wrg, wrg) * w
-        
+
         for i in range(video.shape[0]):
-            x = apply_affine_transform(video[i,:,:,:], tx=tx, ty=ty, channel_axis=channel_axis,
-                                fill_mode=fill_mode, cval=cval,
-                                order=interpolation_order)
+            x = apply_affine_transform(video[i, :, :, :], tx=tx, ty=ty, channel_axis=channel_axis,
+                                       fill_mode=fill_mode, cval=cval,
+                                       order=interpolation_order)
             video[i] = x
         return video
 
-    def random_rotation(self, video, rg, prob =0.5,row_axis=0, col_axis=1, channel_axis=2,
-                    fill_mode='nearest', cval=0., interpolation_order=1):
+    def random_rotation(self, video, rg, prob=0.5, row_axis=0, col_axis=1, channel_axis=2,
+                        fill_mode='nearest', cval=0., interpolation_order=1):
         s = np.random.rand()
         if s > prob:
-            return video        
-        theta = np.random.uniform(-rg,rg)
-
+            return video
+        theta = np.random.uniform(-rg, rg)
         for i in range(np.shape(video)[0]):
-            x = apply_affine_transform(video[i,:,:,:], theta=theta, channel_axis=channel_axis,
-                                fill_mode=fill_mode, cval=cval,
-                                order=interpolation_order)
+            x = apply_affine_transform(video[i, :, :, :], theta=theta, channel_axis=channel_axis,
+                                       fill_mode=fill_mode, cval=cval,
+                                       order=interpolation_order)
             video[i] = x
         return video
 
+    def random_brightness(self, video, brightness_range):
+        if len(brightness_range) != 2:
+            raise ValueError(
+                '`brightness_range should be tuple or list of two floats. '
+                'Received: %s' % (brightness_range,))
+        u = np.random.uniform(brightness_range[0], brightness_range[1])
+        for i in range(np.shape(video)[0]):
+            x = apply_brightness_shift(video[i, :, :, :], u)
+            video[i] = x
+        return video
+
+    def dynamic_crop(self, video):
+        # extract layer of optical flow from video
+        opt_flows = video[..., 3]
+        # sum of optical flow magnitude of individual frame
+        magnitude = np.sum(opt_flows, axis=0)
+        # filter slight noise by threshold
+        thresh = np.mean(magnitude)
+        magnitude[magnitude < thresh] = 0
+        # calculate center of gravity of magnitude map and adding 0.001 to avoid empty value
+        x_pdf = np.sum(magnitude, axis=1) + 0.001
+        y_pdf = np.sum(magnitude, axis=0) + 0.001
+        # normalize PDF of x and y so that the sum of probs = 1
+        x_pdf /= np.sum(x_pdf)
+        y_pdf /= np.sum(y_pdf)
+        # randomly choose some candidates for x and y
+        x_points = np.random.choice(a=np.arange(
+            56, 168), size=10, replace=True, p=x_pdf)
+        y_points = np.random.choice(a=np.arange(
+            56, 168), size=10, replace=True, p=y_pdf)
+        # get the mean of x and y coordinates for better robustness
+        x = int(np.mean(x_points))
+        y = int(np.mean(y_points))
+        # get cropped video
+        return video[:, x-56:x+56, y-56:y+56, :]
+    
+    
+    def resize_frames(self, video):
+        resized = []
+        for i in range(video.shape[0]):
+            x = cv2.resize(
+                video[i], (self.resize, self.resize)).astype(np.float32)
+            resized.append(x)
+        return np.array(resized)
+    
+    
+    def random_crop(self, video, prob=0.5):
+        s = np.random.rand()
+        if s > prob:
+            return self.resize_frames(video)
+        # gives back a randomly cropped 224 X 224 from a video with frames 320 x 320
+        x_points = np.random.choice(
+            a=np.arange(112, 208), size=6, replace=True)
+        y_points = np.random.choice(
+            a=np.arange(112, 208), size=6, replace=True)
+        # get the mean of x and y coordinates for better robustness
+        x = int(np.mean(x_points))
+        y = int(np.mean(y_points))
+        # get cropped video
+        return video[:, x-112:x+112, y-112:y+112, :]
+
+
+
     def load_data(self, path):
-        # load the processed .npy files 
+        # load the processed .npy files
         data = np.load(path, mmap_mode='r')
         data = np.float32(data)
         # sampling 20 frames uniformly from the entire video
-        data = self.uniform_sampling(video=data, target_frames=self.target_frames)
-        # normalize  images 
-        data = self.normalize(data)
+        if self.sample:
+            data = self.uniform_sampling(
+                video=data, target_frames=self.target_frames)
         # data augmentation
-        if  self.data_aug:
-            #data = self.color_jitter(data,prob=0.6)
-            data = self.random_flip(data, prob=0.5)
-            data = self.crop_corner(data, prob=0.5)
-            #data = self.random_shift(data, wrg = .2, hrg= .2, prob = 0.4)
-            #data = self.random_shear(data,intensity=10,prob=0.3)
-            #data = self.random_rotation(data, rg=25, prob=0.4)
+        if self.data_aug:
+            data = self.random_brightness(data, (0.6, 1.4))
+            data = self.color_jitter(data, prob = .90)
+            data = self.random_flip(data, prob=0.50)
+            data = self.random_crop(data, prob=0.80)
+            data = self.random_rotation(data, rg=25, prob=0.80)
+        else:
+            # center cropping only for test generators
+            data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
+        assert (data.shape == (self.target_frames,self.resize, self.resize,3))
+        # normalize  images
+        data = self.normalize(data)
         return data
 
 
-
-### Demo code
-if __name__=="__main__":
+# Demo code
+if __name__ == "__main__":
     dataset = 'hockey'
-    train_generator = DataGenerator(directory='../Datasets/{}/train'.format(dataset), 
-                                    batch_size=batch_size, 
+    train_generator = DataGenerator(directory='../Datasets/{}/train'.format(dataset),
+                                    batch_size=batch_size,
                                     data_augmentation=True,
                                     shuffle=False,
-                                    one_hot = False,
+                                    one_hot=False,
                                     target_frames=20)
     print(train_generator)
-
-
-    

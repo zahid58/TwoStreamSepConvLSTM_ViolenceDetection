@@ -7,6 +7,7 @@ from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.layers import Dense,GlobalAveragePooling2D, Multiply, MaxPooling2D,Concatenate,Add
 from tensorflow.keras.models import Model
 from customLayers import SepConvLSTM2D
+from customCnn import SeparableConvResnet
 
 def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
     """parameters:
@@ -19,27 +20,27 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
     image_input = Input(shape=(seq_len, size, size, 3))
     
     cnn = MobileNetV2(weights= cnn_weight, include_top=False,input_shape =(size, size, 3))
-
+    
     for layer in cnn.layers:
         layer.trainable = True
  
     cnn = TimeDistributed(cnn)(image_input)
 
-    lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=False)(cnn)
-    lstm = MaxPooling2D(pool_size=(2, 2))(lstm)   
+    lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='valid', return_sequences=True)(cnn)
+    lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='valid', return_sequences=True)(lstm)
+    lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=False)(lstm)
+        
     lstm = Flatten()(lstm)
     x = BatchNormalization()(lstm)
     
-    #x = GlobalAveragePooling2D()(x)
-
-    x = Dense(1000,activation = 'relu')(x)
-    x = Dropout(0.1)(x)
+    x = Dense(512, activation = 'relu')(x) 
+    x = Dropout(0.0)(x)
     
-    x = Dense(256,activation='relu')(x)
-    x = Dropout(0.1)(x)
+    x = Dense(128, activation='relu')(x)
+    x = Dropout(0.0)(x)
 
-    x = Dense(16,activation='relu')(x)
-    x = Dropout(0.1)(x)
+    x = Dense(16, activation='relu')(x)
+    x = Dropout(0.0)(x)
 
     activation = 'sigmoid'
     
@@ -52,3 +53,5 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
 
     model = Model(inputs=[image_input], outputs=predictions)
     return model
+
+
