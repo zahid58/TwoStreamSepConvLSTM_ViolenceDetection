@@ -18,6 +18,7 @@ from numpy.random import seed, shuffle
 seed(42)
 random.seed(42)
 set_seed(42)
+
 #-----------------------------------
 
 initial_learning_rate = 4e-04
@@ -42,9 +43,11 @@ bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
 bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
 
-epochs = 45
+epochs = 35
 
 learning_rate = None   
+
+cnn_trainable = True
 
 ###################################################
 
@@ -73,11 +76,10 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                target_frames = vid_len)
 
 #--------------------------------------------------
-
+print('> cnn_trainable : ',cnn_trainable)
 if create_new_model:
     print('> creating new model...')
-    model = rwfRGBonly.getModel(
-        size=input_frame_size, seq_len=vid_len)
+    model =  sepConvLstmNet.getModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable)
     optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
     model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['acc'])
     print('> Dropout on FC layer : ', model.layers[-2].rate)
@@ -86,12 +88,18 @@ else:
     print('> getting the model from...', bestModelPath)
     model = load_model(bestModelPath, custom_objects={
                       'SepConvLSTM2D': SepConvLSTM2D})
+    # freezing/unfreezing the CNN
+    #for layer in model.layers[1].layer.layers: 
+    #    layer.trainable = cnn_trainable 
     if learning_rate is not None:
-        K.set_value(model.optimizer.lr, learning_rate)
+        K.set_value(model.optimizer.lr, learning_rate)  
+    # recompiling the model          
+    # model.compile(optimizer=model.optimizer, loss='categorical_crossentropy', metrics=['acc'])
     print('> Dropout on FC layer : ', model.layers[-2].rate)
 
-print(model.summary())
-print('> optimizer : ', model.optimizer.get_config())
+print('> Summary of the model : ')
+model.summary()
+print('> Optimizer : ', model.optimizer.get_config())
 
 #--------------------------------------------------
 

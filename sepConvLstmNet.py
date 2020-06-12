@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Dense, Flatten, Dropout, ZeroPadding3D, Conv
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import TimeDistributed
 from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.layers import Lambda, Dense, GlobalAveragePooling2D, Multiply, MaxPooling2D, Concatenate, Add, AveragePooling2D 
+from tensorflow.keras.layers import Lambda, Dense, Bidirectional, GlobalAveragePooling2D, Multiply, MaxPooling2D, Concatenate, Add, AveragePooling2D 
 from tensorflow.keras.initializers import glorot_uniform, he_normal
 from tensorflow.keras.models import Model
 from tensorflow.python.keras import backend as K
@@ -83,12 +83,12 @@ def convolutional_block(X, f, filters, stage, block, s = 2):
 def tiny_resnet(input_shape=(224,224,3)):
 
     X_input = Input(input_shape)
-    X = Conv2D(16, (7, 7), strides=(2, 2), name='conv1', kernel_initializer = he_normal(seed=0))(X_input)
+    X = Conv2D(16, (5, 5), strides=(2, 2), name='conv1', kernel_initializer = he_normal(seed=0))(X_input)
     X = BatchNormalization(axis=3, name='bn_conv1')(X)
     X = Activation('relu')(X)
     X = MaxPooling2D((3, 3), strides=(2, 2))(X)
 
-    X = convolutional_block(X, 5, filters=[16, 16, 32], stage=2, block='a', s=1)
+    X = convolutional_block(X, 5, filters=[16, 16, 32], stage=2, block='a', s = 1) 
     X = identity_block(X, 5, [16, 16, 32], stage=2, block='b')
 
     X = convolutional_block(X, 3, filters = [16, 16, 32], stage = 3, block='a', s = 2)
@@ -105,7 +105,7 @@ def tiny_resnet(input_shape=(224,224,3)):
 
 
 
-def getModel(size=224, seq_len=32 , cnn_weight=None):
+def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True):
     """parameters:
     size = height/width of each frame,
     seq_len = number of frames in each sequence,
@@ -115,28 +115,32 @@ def getModel(size=224, seq_len=32 , cnn_weight=None):
     """
     image_input = Input(shape=(seq_len, size, size, 3),name='Input')
     
-    #cnn = MobileNetV2(weights= cnn_weight, include_top=False,input_shape =(size, size, 3))
-    cnn = tiny_resnet(input_shape=(size, size, 3))
+    cnn = MobileNetV2(weights= cnn_weight, include_top=False, input_shape =(size, size, 3))
     
+    print('> cnn_trainable : ', cnn_trainable)
     for layer in cnn.layers:
-        layer.trainable = True
+        layer.trainable = cnn_trainable
  
-    cnn = TimeDistributed(cnn,name='CNN')(image_input)
-    cnn = TimeDistributed(AveragePooling2D(pool_size=(2,2)),name='AveragePooling')(cnn)
+    cnn = TimeDistributed( cnn,name='CNN' )(image_input)
+    cnn = TimeDistributed( AveragePooling2D((2,2)), name='avgpool_2D')(cnn)
+    cnn = TimeDistributed( Conv2D(filters = 128, kernel_size = (1, 1), padding = 'same', kernel_initializer = he_normal(seed=0), name = 'one_by_one_conv'))(cnn)
+    cnn = TimeDistributed( BatchNormalization(axis=3),name='batch_norm' )(cnn)
+    cnn = TimeDistributed( Activation('relu') ,name='relu')(cnn)
+    cnn = TimeDistributed( Dropout(0.4) ,name='dropout')(cnn)
 
-    lstm = SepConvLSTM2D(filters=128, kernel_size=(3, 3), padding='same', return_sequences=True,dropout=0.4, recurrent_dropout=0.4, name='SepConvLSTM2D')(cnn)
+    lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=0.4, recurrent_dropout=0.4, name='SepConvLSTM2D' )(cnn)
+    lstm = BatchNormalization( axis = 4 )(lstm)
 
-    # elementwise maxpooling / mean pooling
-    TimeDistributedMean = Lambda(function=lambda x: K.mean(x, axis=1), output_shape=lambda shape: (shape[0],) + shape[2:] , name='TimeDistributedMean')
+    # temporal mean pooling
+    TimeDistributedMean = Lambda(function=lambda x: K.mean(x, axis=1), output_shape=lambda shape: (shape[0],) + shape[2:] , name='TemporalMeanPooling')
     lstm = TimeDistributedMean(lstm)
 
     x = Flatten()(lstm)
-    #x = BatchNormalization()(x)
-
+    
     dropout = 0.4
     x = Dense(128, activation='relu')(x)
     x = Dropout(dropout)(x)
-    x = Dense(32, activation='relu')(x)
+    x = Dense(16, activation='relu')(x)
     x = Dropout(dropout)(x)
 
     activation = 'softmax'
