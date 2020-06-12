@@ -91,10 +91,10 @@ class DataGenerator(Sequence):
       
     def normalize(self, data):
         data = (data / 255.0).astype(np.float32)
-        #mean = np.mean(data)
-        #std = np.std(data)
-        mean = [0.485, 0.456, 0.406]
-        std = [0.229, 0.224, 0.225]
+        mean = np.mean(data)
+        std = np.std(data)
+        #mean = [0.485, 0.456, 0.406]
+        #std = [0.229, 0.224, 0.225]
         return (data-mean) / std
     
     def random_flip(self, video, prob):
@@ -252,7 +252,7 @@ class DataGenerator(Sequence):
             data = self.crop_corner(data, prob=0.5)
             #data = self.random_shift(data, wrg = .2, hrg= .2, prob = 0.4)
             #data = self.random_shear(data,intensity=10,prob=0.3)
-            #data = self.random_rotation(data, rg=15, prob=0.4)
+            #data = self.random_rotation(data, rg=25, prob=0.4)
         return data
 
 
