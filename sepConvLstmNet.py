@@ -27,18 +27,16 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
 
     lstm = SepConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=False)(cnn)
     lstm = MaxPooling2D(pool_size=(2, 2))(lstm)   
-    #lstm = Flatten()(lstm)
+    lstm = Flatten()(lstm)
     x = BatchNormalization()(lstm)
     
-    x = GlobalAveragePooling2D()(x)
-
-    #x = Dense(768,activation = 'relu')(x)
-    #x = Dropout(0.3)(x)
+    x = Dense(768,activation = 'relu')(x)
+    x = Dropout(0.1)(x)
     
     x = Dense(128,activation='relu')(x)
-    x = Dropout(0.2)(x)
+    x = Dropout(0.1)(x)
 
-    x = Dense(16,activation='relu')(x)
+    x = Dense(10,activation='relu')(x)
     x = Dropout(0.1)(x)
 
     activation = 'sigmoid'
