@@ -15,6 +15,7 @@ from utils import *
 import sepConvLstmNet
 import shutil
 import pickle
+from customLayers import SepConvLSTM2D
 
 dataset = 'hockey'
 dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies'}
@@ -27,11 +28,11 @@ batch_size = 4   #4
 vid_len = 20   #10
 frame_size = 224
 
-preprocess_data = True  #######
+preprocess_data = False  #######
 split_number = 1   #[1,2,3,4,5,6]
 create_new_model = True  #######
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + str(dataset) + '_bestModel.h5'
-epochs = 20
+epochs = 10
 
 if preprocess_data:
     splits = five_fold_split(dataset_name=dataset,source=dataset_videos[dataset])
@@ -64,11 +65,11 @@ if create_new_model:
     print('new model created')
 else:
     print('getting the model from ',bestModelPath)
-    model = load_model(bestModelPath)
+    model = load_model(bestModelPath,custom_objects={'SepConvLSTM2D':SepConvLSTM2D})
     print('got the model')
 print(model.summary())
 
-optimizer = RMSprop(lr=1e-04)
+optimizer = Adam(lr=5e-05)
 model.compile(optimizer=optimizer, loss='binary_crossentropy',metrics=['acc'])
 modelcheckpoint = ModelCheckpoint(bestModelPath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto', save_freq='epoch')    
 

@@ -90,11 +90,11 @@ class DataGenerator(Sequence):
         return batch_x, batch_y
       
     def normalize(self, data):
-        #mean = np.mean(data)
-        #std = np.std(data)
         data = (data / 255.0).astype(np.float32)
-        mean = [0.485, 0.456, 0.406]
-        std = [0.229, 0.224, 0.225]
+        mean = np.mean(data)
+        std = np.std(data)
+        #mean = [0.485, 0.456, 0.406]
+        #std = [0.229, 0.224, 0.225]
         return (data-mean) / std
     
     def random_flip(self, video, prob):
@@ -243,12 +243,12 @@ class DataGenerator(Sequence):
         data = np.float32(data)
         # sampling 20 frames uniformly from the entire video
         data = self.uniform_sampling(video=data, target_frames=self.target_frames)
-        # normalize bgr images 
+        # normalize  images 
         data = self.normalize(data)
         # data augmentation
         if  self.data_aug:
             #data = self.color_jitter(data,prob=0.6)
-            #data = self.random_flip(data, prob=0.5)
+            data = self.random_flip(data, prob=0.5)
             data = self.crop_corner(data, prob=0.5)
             #data = self.random_shift(data, wrg = .2, hrg= .2, prob = 0.4)
             #data = self.random_shear(data,intensity=10,prob=0.3)
