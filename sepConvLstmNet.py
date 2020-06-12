@@ -33,13 +33,13 @@ def getModel(size=224, seq_len=20 , cnn_weight=None, lstm_conf=None ):
     #x = GlobalAveragePooling2D()(x)
 
     x = Dense(1000,activation = 'relu')(x)
-    x = Dropout(0.0)(x)
+    x = Dropout(0.1)(x)
     
     x = Dense(256,activation='relu')(x)
-    x = Dropout(0.0)(x)
+    x = Dropout(0.1)(x)
 
     x = Dense(16,activation='relu')(x)
-    x = Dropout(0.0)(x)
+    x = Dropout(0.1)(x)
 
     activation = 'sigmoid'
     

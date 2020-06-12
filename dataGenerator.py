@@ -91,10 +91,10 @@ class DataGenerator(Sequence):
       
     def normalize(self, data):
         data = (data / 255.0).astype(np.float32)
-        mean = np.mean(data)
-        std = np.std(data)
-        #mean = [0.485, 0.456, 0.406]
-        #std = [0.229, 0.224, 0.225]
+        #mean = np.mean(data)
+        #std = np.std(data)
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
         return (data-mean) / std
     
     def random_flip(self, video, prob):
