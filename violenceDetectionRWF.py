@@ -36,6 +36,7 @@ input_frame_size = 224
 preprocess_data = False
 
 create_new_model = True
+
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_bestModel.h5'
 
