@@ -27,7 +27,7 @@ batch_size = 4   #4
 vid_len = 20   #10
 frame_size = 224
 
-preprocess_data = True  #######
+preprocess_data = False  #######
 split_number = 1   #[1,2,3,4,5,6]
 create_new_model = True  #######
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + str(dataset) + '_bestModel.h5'
@@ -68,9 +68,9 @@ else:
     print('got the model')
 print(model.summary())
 
-optimizer = RMSprop(lr=.0001)
+optimizer = RMSprop(lr=7e-05)
 model.compile(optimizer=optimizer, loss='binary_crossentropy',metrics=['acc'])
-modelcheckpoint = ModelCheckpoint(bestModelPath, monitor='loss', verbose=1, save_best_only=True, mode='auto', save_freq='epoch')    
+modelcheckpoint = ModelCheckpoint(bestModelPath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto', save_freq='epoch')    
 
 history = model.fit(
         steps_per_epoch=len(train_generator),
@@ -82,8 +82,8 @@ history = model.fit(
         workers = 8,
         max_queue_size= 8,
         use_multiprocessing = False,
-        callbacks=[EarlyStopping(monitor='val_loss', min_delta=0.001, patience=15, ),
-                   ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, min_lr=1e-8, verbose=1),
+        callbacks=[EarlyStopping(monitor='val_loss', min_delta=0.001, patience=15 ),
+                   #ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, min_lr=1e-8, verbose=1),
                    modelcheckpoint
                    ]
         )
