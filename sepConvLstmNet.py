@@ -4,9 +4,10 @@ from tensorflow.keras.layers import Dense, Flatten, Dropout, ZeroPadding3D, Conv
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import TimeDistributed
 from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.layers import Lambda, Dense, Bidirectional, GlobalAveragePooling2D, Multiply, MaxPooling2D, Concatenate, Add, AveragePooling2D 
+from tensorflow.keras.layers import ELU, ReLU, LeakyReLU, Lambda, Dense, Bidirectional, GlobalAveragePooling2D, Multiply, MaxPooling2D, Concatenate, Add, AveragePooling2D 
 from tensorflow.keras.initializers import glorot_uniform, he_normal
 from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
 from tensorflow.python.keras import backend as K
 from customLayers import SepConvLSTM2D
 from customCnn import SeparableConvResnet
@@ -105,7 +106,7 @@ def tiny_resnet(input_shape=(224,224,3)):
 
 
 
-def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True):
+def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, weight_decay = 0.00005):
     """parameters:
     size = height/width of each frame,
     seq_len = number of frames in each sequence,
@@ -115,21 +116,23 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     """
     image_input = Input(shape=(seq_len, size, size, 3),name='Input')
     
-    cnn = MobileNetV2(weights= cnn_weight, include_top=False, input_shape =(size, size, 3))
-    
+    cnn = MobileNetV2(input_shape=(size,size,3),weights='imagenet',include_top=False)
+    cnn = Model(inputs=[cnn.layers[0].input],outputs=[cnn.layers[-4].output]) # removing last 3 layers
+
     print('> cnn_trainable : ', cnn_trainable)
     for layer in cnn.layers:
         layer.trainable = cnn_trainable
  
     cnn = TimeDistributed( cnn,name='CNN' )(image_input)
-    cnn = TimeDistributed( AveragePooling2D((2,2)), name='avgpool_2D')(cnn)
-    cnn = TimeDistributed( Conv2D(filters = 128, kernel_size = (1, 1), padding = 'same', kernel_initializer = he_normal(seed=0), name = 'one_by_one_conv'))(cnn)
     cnn = TimeDistributed( BatchNormalization(axis=3),name='batch_norm' )(cnn)
-    cnn = TimeDistributed( Activation('relu') ,name='relu')(cnn)
-    cnn = TimeDistributed( Dropout(0.4) ,name='dropout')(cnn)
-
-    lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=0.4, recurrent_dropout=0.4, name='SepConvLSTM2D' )(cnn)
+    cnn = TimeDistributed( LeakyReLU(alpha=0.3) ,name='leaky_relu' )(cnn)
+    cnn = TimeDistributed( Dropout(0.3) ,name='dropout' )(cnn)
+  
+    lstm = SepConvLSTM2D( filters = 256, kernel_size=(3, 3), padding='valid', return_sequences=True, dropout=0.3, recurrent_dropout=0.3, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(cnn)
     lstm = BatchNormalization( axis = 4 )(lstm)
+    lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='valid', return_sequences=True, dropout=0.3, recurrent_dropout=0.3, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay) )(lstm)
+    lstm = BatchNormalization( axis = 4 )(lstm)
+
 
     # temporal mean pooling
     TimeDistributedMean = Lambda(function=lambda x: K.mean(x, axis=1), output_shape=lambda shape: (shape[0],) + shape[2:] , name='TemporalMeanPooling')
@@ -138,17 +141,16 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     x = Flatten()(lstm)
     
     dropout = 0.4
-    x = Dense(128, activation='relu')(x)
+    x = Dense(256)(x)
+    x = ELU(alpha=0.3)(x)
     x = Dropout(dropout)(x)
-    x = Dense(16, activation='relu')(x)
+    x = Dense(128)(x)
+    x = LeakyReLU(alpha=0.3)(x)
     x = Dropout(dropout)(x)
-
-    activation = 'softmax'
-    
-    if  activation == 'sigmoid':
-        predictions = Dense(1, activation=activation)(x)
-    elif  activation == 'softmax':
-        predictions = Dense(2,  activation=activation)(x)
+    x = Dense(16)(x)
+    x = LeakyReLU(alpha=0.2)(x)
+    x = Dropout(dropout)(x)
+    predictions = Dense(1, activation='sigmoid')(x)
 
     model = Model(inputs=[image_input], outputs=predictions)
     return model
