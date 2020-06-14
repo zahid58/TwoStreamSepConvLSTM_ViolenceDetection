@@ -169,44 +169,6 @@ class DataGenerator(Sequence):
         video = video[:, y_start:y_end, x_start:x_end, :]
         return video
 
-    def crop_corner(self, video, prob=0.5, crop_range=(.65, .85)):
-        s = np.random.rand()
-        if s > prob:
-            return video
-        frame_size = np.size(video, axis=1)
-        corner_keys = ["Left_up", "Right_down",
-                       "Right_up", "Left_down", "Center"]
-        corner = random.choice(corner_keys)
-        percentage = np.random.uniform(crop_range[0], crop_range[1])
-        resize = int(frame_size*percentage)
-        if(corner == "Left_up"):
-            x_start = 0
-            x_end = resize
-            y_start = 0
-            y_end = resize
-        if (corner == "Right_down"):
-            x_start = frame_size-resize
-            x_end = frame_size
-            y_start = frame_size-resize
-            y_end = frame_size
-        if(corner == "Right_up"):
-            x_start = 0
-            x_end = resize
-            y_start = frame_size-resize
-            y_end = frame_size
-        if (corner == "Left_down"):
-            x_start = frame_size-resize
-            x_end = frame_size
-            y_start = 0
-            y_end = resize
-        if (corner == "Center"):
-            half = int(frame_size*(1-percentage)/2.0)
-            x_start = half
-            x_end = frame_size-half
-            y_start = half
-            y_end = frame_size-half
-        video = video[:, y_start:y_end, x_start:x_end, :]
-        return video
 
     def random_shear(self, video, intensity, prob=0.5, row_axis=0, col_axis=1, channel_axis=2,
                      fill_mode='nearest', cval=0., interpolation_order=1):
@@ -288,6 +250,8 @@ class DataGenerator(Sequence):
         return Superpixel(p_replace=p_replace,n_segments=n_segments)(video)    
 
     def resize_frames(self, video):
+        if not isinstance(video, np.ndarray):
+            video = np.array(video, dtype=np.float32)
         resized = []
         for i in range(video.shape[0]):
             x = cv2.resize(
@@ -303,13 +267,10 @@ class DataGenerator(Sequence):
         if s > prob:
             return self.resize_frames(video)
         # gives back a randomly cropped 224 X 224 from a video with frames 320 x 320
-        x_points = np.random.choice(
-            a=np.arange(112, 208), size=6, replace=True)
-        y_points = np.random.choice(
-            a=np.arange(112, 208), size=6, replace=True)
-        # get the mean of x and y coordinates for better robustness
-        x = int(np.mean(x_points))
-        y = int(np.mean(y_points))
+        x = np.random.choice(
+            a=np.arange(112, 208), replace=True)
+        y = np.random.choice(
+            a=np.arange(112, 208), replace=True)
         # get cropped video
         return video[:, x-112:x+112, y-112:y+112, :]
 
@@ -385,13 +346,13 @@ class DataGenerator(Sequence):
             data = self.random_flip(data, prob=0.50)
             data = self.random_crop(data, prob=0.80)
             data = self.random_rotation(data, rg=25, prob=1)
-            data = self.inverse_order(data,prob=0.1)
+            data = self.inverse_order(data,prob=0.2)
             data = self.upsample_downsample(data,prob=0.5)
             data = self.temporal_elastic_transformation(data,prob=0.2)
             data = self.gaussian_blur(data,prob=0.2,low=1,high=2) 
             diff_data = self.frame_difference(data)
-            data = self.pepper(data,prob=0.3,ratio=50)
-            data = self.salt(data,prob=0.3,ratio=50)
+            data = self.pepper(data,prob=0.3,ratio=40)
+            data = self.salt(data,prob=0.3,ratio=40)
             data = np.concatenate((data,diff_data),axis=-1)
         else:
             # center cropping only for test generators

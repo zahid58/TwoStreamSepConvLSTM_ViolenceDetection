@@ -49,10 +49,7 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     cnn = Concatenate(axis=-1, name='concatenate_')([frames_cnn, frames_diff_cnn])
 
     lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=0.4, recurrent_dropout=0.4, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(cnn)
-    lstm_0 = BatchNormalization( axis = 4 )(lstm)
-    lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=0.4, recurrent_dropout=0.4, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(lstm_0)
     lstm = BatchNormalization( axis = 4 )(lstm)
-    lstm = Add(name="residul_connection")([lstm, lstm_0])
 
     x = Conv3D(
         64, kernel_size=(1,3,3), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same',kernel_regularizer=l2(weight_decay),name='3d_conv_1')(lstm)

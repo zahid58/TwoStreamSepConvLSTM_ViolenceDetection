@@ -43,7 +43,7 @@ bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
 bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
 
-epochs = 40
+epochs = 30
 
 learning_rate = None   
 
@@ -125,9 +125,7 @@ history = model.fit(
     workers=8,
     max_queue_size=8,
     use_multiprocessing=False,
-    callbacks=[ # EarlyStopping(monitor='val_loss', min_delta=0.001, patience=650),
-                # ReduceLROnPlateau(monitor='loss', factor=0.5,
-                #                  patience=2, min_lr=1e-8, verbose=1),
+    callbacks=[
                 LearningRateScheduler(lr_scheduler, verbose = 0),
                 modelcheckpoint,
                 modelcheckpointVal

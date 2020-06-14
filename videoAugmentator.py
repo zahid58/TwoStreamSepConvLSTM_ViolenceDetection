@@ -224,31 +224,49 @@ class Superpixel(object):
 
 class DynamicCrop(object):
     """
-    Crops the spatial part of a video containing most movemnets
+    Crops the spatial area of a video containing most movemnets
     """
     def __init__(self):
         pass
 
+    def normalize(self,pdf):
+        mn = np.min(pdf)
+        mx = np.max(pdf)
+        pdf = (pdf - mn)/(mx - mn)
+        sm = np.sum(pdf)
+        return pdf/sm
+
     def __call__(self, video, opt_flows):
+        
+        if not isinstance(video , np.ndarray):
+            video = np.array(video, dtype=np.float32)
+            opt_flows = np.array(opt_flows,dtype=np.float32)
+
         magnitude = np.sum(opt_flows, axis=0)
+        magnitude = np.sum(magnitude, axis=-1)
         thresh = np.mean(magnitude)
         magnitude[magnitude < thresh] = 0
         # calculate center of gravity of magnitude map and adding 0.001 to avoid empty value
         x_pdf = np.sum(magnitude, axis=1) + 0.001
         y_pdf = np.sum(magnitude, axis=0) + 0.001
         # normalize PDF of x and y so that the sum of probs = 1
-        x_pdf /= np.sum(x_pdf)
-        y_pdf /= np.sum(y_pdf)
+        x_pdf = x_pdf[112:208]
+        y_pdf = y_pdf[112:208]
+        x_pdf = self.normalize(x_pdf)
+        y_pdf = self.normalize(y_pdf)
         # randomly choose some candidates for x and y
         x_points = np.random.choice(a=np.arange(
-            56, 168), size=10, replace=True, p=x_pdf)
+            112, 208), size=5, replace=True, p=x_pdf)
         y_points = np.random.choice(a=np.arange(
-            56, 168), size=10, replace=True, p=y_pdf)
+            112, 208), size=5, replace=True, p=y_pdf)
         # get the mean of x and y coordinates for better robustness
         x = int(np.mean(x_points))
         y = int(np.mean(y_points))
+        video = video[:, x-112:x+112, y-112:y+112, :]
+        opt_flows = opt_flows[:, x-112:x+112, y-112:y+112, :] 
         # get cropped video
-        return video[:, x-56:x+56, y-56:y+56, :]        
+        return video , opt_flows 
+                 
 
 # _____________________________________
 
