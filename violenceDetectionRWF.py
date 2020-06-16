@@ -8,6 +8,7 @@ from utils import *
 from dataGenerator import *
 from datasetProcess import *
 from tensorflow.keras.models import load_model
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.optimizers import RMSprop, Adam
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback, ModelCheckpoint,LearningRateScheduler
 from tensorflow.python.keras import backend as K
@@ -100,6 +101,10 @@ else:
 print('> Summary of the model : ')
 model.summary(line_length=140)
 print('> Optimizer : ', model.optimizer.get_config())
+
+dot_img_file = 'model_architecture.png'
+print('> plotting the model architecture and saving at ', dot_img_file)
+plot_model(model, to_file=dot_img_file, show_shapes=True)
 
 #--------------------------------------------------
 

@@ -40,11 +40,11 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
 
     frames_cnn = TimeDistributed( frames_cnn,name='frames_CNN' )( frames_input )
     frames_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_1_' )( frames_cnn)
-    frames_cnn = TimeDistributed( Dropout(0.2) ,name='dropout_1_' )(frames_cnn)
+    frames_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_1_' )(frames_cnn)
   
     frames_diff_cnn = TimeDistributed( frames_diff_cnn,name='frames_diff_CNN' )(frames_diff_input)
     frames_diff_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_2_' )(frames_diff_cnn)
-    frames_diff_cnn = TimeDistributed( Dropout(0.2) ,name='dropout_2_' )(frames_diff_cnn)
+    frames_diff_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_2_' )(frames_diff_cnn)
 
     cnn = Concatenate(axis=-1, name='concatenate_')([frames_cnn, frames_diff_cnn])
 
