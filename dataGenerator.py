@@ -277,6 +277,45 @@ class DataGenerator(Sequence):
         out.append(video[num_frames-1] - video[num_frames-2])
         return np.array(out,dtype=np.float32)
 
+
+    def farneback(self, video):
+        """Calculate dense optical flow of input video using Farneback Algorithm
+        Args:
+            video: the input video with shape of [frames,height,width,channel]. dtype=np.array
+        Returns:
+            flows_x: the optical flow at x-axis, with the shape of [frames,height,width,channel]
+            flows_y: the optical flow at y-axis, with the shape of [frames,height,width,channel]
+        """
+        # initialize the list of optical flows
+        gray_video = []
+        for i in range(len(video)):
+            img = cv2.cvtColor(video[i], cv2.COLOR_RGB2GRAY)
+            gray_video.append(np.reshape(img,(224,224,1)))
+        flows = []
+        for i in range(0,len(video)-1):
+            # calculate optical flow between each pair of frames
+            flow = cv2.calcOpticalFlowFarneback(gray_video[i], gray_video[i+1], None, 0.5, 3, 15, 3, 5, 1.2, cv2.OPTFLOW_FARNEBACK_GAUSSIAN)
+            # subtract the mean in order to eliminate the movement of camera
+            flow[..., 0] -= np.mean(flow[..., 0])
+            flow[..., 1] -= np.mean(flow[..., 1])
+            # normalize each component in optical flow
+            flow[..., 0] = cv2.normalize(flow[..., 0],None,0,255,cv2.NORM_MINMAX)
+            flow[..., 1] = cv2.normalize(flow[..., 1],None,0,255,cv2.NORM_MINMAX)
+            # Add into list 
+            flows.append(flow)           
+        # Repeating the last frame twice, for matching with number of frames in video
+        last_frame = flows[-1]
+        flows.append(last_frame)	   
+        return np.array(flows, dtype=np.float32)
+
+
+    def getOpticalFlow(self, video):
+        flow = self.farneback(video)
+        # Adding another channel as Mobilenet expects 3 channels
+        zero_channel = np.zeros((self.target_frames, self.resize, self.resize, 1))
+        flow = np.concatenate((flow, zero_channel), axis=-1)
+        return flow
+
     def pepper(self, video, prob = 0.5, ratio = 100):
         s = np.random.rand()
         if s > prob:
