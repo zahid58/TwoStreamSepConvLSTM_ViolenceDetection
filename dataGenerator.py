@@ -385,7 +385,7 @@ class DataGenerator(Sequence):
             data = self.upsample_downsample(data,prob=0.5)
             data = self.temporal_elastic_transformation(data,prob=0.20)
             data = self.gaussian_blur(data,prob=0.25,low=1,high=2) 
-            diff_data = self.frame_difference(data)
+            diff_data = self.getOpticalFlow(data)
             data = self.pepper(data,prob=0.3,ratio=45)
             data = self.salt(data,prob=0.3,ratio=45)
             data = np.concatenate((data,diff_data),axis=-1)
