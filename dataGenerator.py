@@ -271,9 +271,9 @@ class DataGenerator(Sequence):
             a=np.arange(112, 208), replace=True)
         return video[:, x-112:x+112, y-112:y+112, :]
 
-    def frame_difference(self, video):
+    def frame_difference(self, video,k=1):
         num_frames = len(video)
-        out = [ video[i+1]-video[i]  for i in range(num_frames-1) ]
+        out = [ video[min(i+k,num_frames-1)]-video[i]  for i in range(num_frames-1) ]
         out.append(video[num_frames-1] - video[num_frames-2])
         return np.array(out,dtype=np.float32)
 
