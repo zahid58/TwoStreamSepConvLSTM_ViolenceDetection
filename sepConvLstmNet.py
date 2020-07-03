@@ -47,26 +47,13 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     frames_diff_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_2_' )(frames_diff_cnn)
 
     cnn = Concatenate(axis=-1, name='concatenate_')([frames_cnn, frames_diff_cnn])
+    cnn = TimeDistributed( MaxPooling2D((2,2) , name = 'max_pooling_'))(cnn)
 
-    lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=0.4, recurrent_dropout=0.4, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(cnn)
-    lstm = BatchNormalization( axis = 4 )(lstm)
-
-    x = Conv3D(
-        64, kernel_size=(1,3,3), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same',kernel_regularizer=l2(weight_decay),name='3d_conv_1')(lstm)
-   
-    x = MaxPooling3D(pool_size=(8,1,1))(x)
+    lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=0.4, recurrent_dropout=0.4, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(cnn)
+    lstm = BatchNormalization( axis = -1 )(lstm)
     
-    x = Conv3D(
-        64, kernel_size=(3,1,1), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same',kernel_regularizer=l2(weight_decay),name='3d_conv_2')(x)
+    x = GlobalAveragePooling2D()(lstm) 
   
-    x = MaxPooling3D(pool_size=(2,2,2))(x)
-
-    x = Conv3D(
-        64, kernel_size=(1,3,3), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same',kernel_regularizer=l2(weight_decay), name="3d_conv_3")(x)
-    
-    x = MaxPooling3D(pool_size=(1,3,3))(x)
-
-    x = Flatten()(x)
     dropout = 0.4
     x = Dense(64)(x)
     x = LeakyReLU(alpha=0.3)(x)
@@ -75,6 +62,7 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     x = LeakyReLU(alpha=0.2)(x)
     x = Dropout(dropout)(x)
     predictions = Dense(1, activation='sigmoid')(x)
+    
     model = Model(inputs=[inputs], outputs=predictions)
     return model
 
