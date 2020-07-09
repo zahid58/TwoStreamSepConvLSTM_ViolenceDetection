@@ -36,7 +36,7 @@ input_frame_size = 224
 
 preprocess_data = False
 
-create_new_model = True
+create_new_model = False
 
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_bestModel.h5'
@@ -44,7 +44,7 @@ bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
 bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
 
-epochs = 30
+epochs = 5
 
 learning_rate = None   
 
@@ -111,17 +111,14 @@ plot_model(model, to_file=dot_img_file, show_shapes=True)
 
 modelcheckpoint = ModelCheckpoint(
     bestModelPath, monitor='loss', verbose=0, save_best_only=False, mode='auto', save_freq='epoch')
+    
 modelcheckpointVal = ModelCheckpoint(
     bestValPath, monitor='val_acc', verbose=0, save_best_only=True, mode='auto', save_freq='epoch')
 
-def lr_scheduler(epoch, lr):
-    decay_rate = 0.5
-    decay_step = 5
-    if epoch % decay_step == 0 and epoch and lr>6e-05:
-        return lr * decay_rate
-    return lr
+historySavePath = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'
+save_training_history = SaveTrainingCurves(save_path = historySavePath)
 
-save_training_history = SaveTrainingCurves(dataset=dataset)
+#--------------------------------------------------
 
 history = model.fit(
     steps_per_epoch=len(train_generator),
@@ -143,6 +140,3 @@ history = model.fit(
 
 #----------------------------------------------------------
 
-history_to_save = history.history
-savePath = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'
-save_plot_history(history=history_to_save, save_path=savePath)

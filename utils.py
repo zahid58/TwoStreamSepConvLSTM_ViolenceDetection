@@ -8,10 +8,10 @@ from tensorflow.keras.callbacks import Callback as CB
 
 class SaveTrainingCurves(CB):
 
-    def __init__(self, dataset = 'rwf2000', split_num = 0, **kargs):
+    def __init__(self, save_path = None, split_num = 0, **kargs):
         super(SaveTrainingCurves,self).__init__(**kargs)
 
-        self.save_path = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'
+        self.save_path = save_path
         self.split_num = split_num        
         historyInDrivePath = self.save_path + 'split_'+ str(self.split_num) + '_history.csv'
 
@@ -26,24 +26,18 @@ class SaveTrainingCurves(CB):
             self.val_acc = history['val_acc']
             self.loss = history['loss']
             self.val_loss = history['val_loss']
-            self.index = history['index']
         else:
             self.acc = []
             self.val_acc = []
             self.loss = []
             self.val_loss = []
-            self.index = []
     
     def on_epoch_end(self, epoch, logs = {}):
         self.acc.append(logs.get('acc'))
         self.val_acc.append(logs.get('val_acc'))
         self.loss.append(logs.get('loss'))
-        self.val_loss.append(logs.get('val_loss'))
-        if len(self.index) == 0:
-            self.index.append(0)
-        else:
-            self.index.append( self.index[-1] + 1 )    
-        history = {'index':self.index, 'acc':self.acc, 'val_acc':self.val_acc,'loss':self.loss,'val_loss':self.val_loss}
+        self.val_loss.append(logs.get('val_loss'))  
+        history = {'acc':self.acc, 'val_acc':self.val_acc,'loss':self.loss,'val_loss':self.val_loss}
         # csv
         historyInDrivePath = self.save_path + 'split_'+ str(self.split_num) + '_history.csv'
         pd.DataFrame(history).to_csv(historyInDrivePath) # gdrive
@@ -76,6 +70,14 @@ class SaveTrainingCurves(CB):
         plt.savefig('split_'+str(self.split_num)+'_loss.png',bbox_inches='tight')  # local
         plt.savefig( self.save_path + 'split_'+ str(self.split_num) + '_loss.png',bbox_inches='tight')  # gdrive
         plt.close()
+
+
+def lr_scheduler(epoch, lr):
+    decay_rate = 0.5
+    decay_step = 5
+    if epoch % decay_step == 0 and epoch and lr>6e-05:
+        return lr * decay_rate
+    return lr
 
 
 def save_plot_history(history, save_path,split_num=0,pickle_only=True):
