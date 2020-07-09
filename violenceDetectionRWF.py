@@ -77,6 +77,7 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                target_frames = vid_len)
 
 #--------------------------------------------------
+
 print('> cnn_trainable : ',cnn_trainable)
 if create_new_model:
     print('> creating new model...')
@@ -120,6 +121,8 @@ def lr_scheduler(epoch, lr):
         return lr * decay_rate
     return lr
 
+save_training_history = SaveTrainingCurves(dataset=dataset)
+
 history = model.fit(
     steps_per_epoch=len(train_generator),
     x=train_generator,
@@ -133,7 +136,8 @@ history = model.fit(
     callbacks=[
                 LearningRateScheduler(lr_scheduler, verbose = 0),
                 modelcheckpoint,
-                modelcheckpointVal
+                modelcheckpointVal,
+                save_training_history
               ]
 )
 

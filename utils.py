@@ -3,14 +3,62 @@ import pandas as pd
 import shutil
 import numpy as np 
 import pickle
+import tensorflow.keras.callbacks.Callback as CB
 
-def save_plot_history(history, save_path,split_num=0):
-    ###
-    print('saving history in csv format...')
-    historyInDrivePath = save_path + 'split_'+ str(split_num) + '_history.csv'
-    pd.DataFrame(history).to_csv(historyInDrivePath) #gdrive
-    pd.DataFrame(history).to_csv('split_'+ str(split_num) + '_history.csv')  #local
-    ###
+
+class SaveTrainingCurves(CB):
+
+    def __init__(self, dataset = 'rwf2000', split_num = 0, **kargs):
+        super(SaveTrainingCurves,self).__init__(**kargs)
+        self.acc = []
+        self.val_acc = []
+        self.loss = []
+        self.val_loss = []
+        self.save_path = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'
+        self.split_num = split_num
+    
+    def on_epoch_end(self, epoch, logs = {}):
+        self.acc.append(logs.get('acc'))
+        self.val_acc.append(logs.get('val_acc'))
+        self.loss.append(logs.get('loss'))
+        self.val_loss.append(logs.get('val_loss'))
+        history = {'acc':self.acc, 'val_acc':self.val_acc,'loss':self.loss,'val_loss':self.val_loss }
+        # csv
+        historyInDrivePath = self.save_path + 'split_'+ str(self.split_num) + '_history.csv'
+        pd.DataFrame(history).to_csv(historyInDrivePath) # gdrive
+        pd.DataFrame(history).to_csv('split_'+ str(self.split_num) + '_history.csv')  # local
+        # graphs
+        self.plot_graphs(history)
+
+    def plot_graphs(self, history):
+        # accuracy
+        plt.figure(figsize=(10, 6))
+        plt.plot(history['acc'])
+        plt.plot(history['val_acc'])
+        plt.title('model accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.grid(True)
+        plt.savefig('split_'+str(self.split_num)+'_accuracy.png',bbox_inches='tight') # local
+        plt.savefig( self.save_path + 'split_'+ str(self.split_num) + '_accuracy.png',bbox_inches='tight') # gdrive
+        # loss
+        plt.figure(figsize=(10, 6))
+        plt.plot(history['loss'])
+        plt.plot(history['val_loss'])
+        plt.title('model loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.grid(True)
+        plt.savefig('split_'+str(self.split_num)+'_loss.png',bbox_inches='tight')  # local
+        plt.savefig( self.save_path + 'split_'+ str(self.split_num) + '_loss.png',bbox_inches='tight')  # gdrive
+    
+
+
+def save_plot_history(history, save_path,split_num=0,pickle_only=true):
+    
+    # pickle
     print('saving history in pickle format...')
     historyFile = save_path + 'split_' + str(split_num) + '_history.pickle'
     try:
@@ -19,9 +67,18 @@ def save_plot_history(history, save_path,split_num=0):
         print('saved', historyFile)
     except Exception as e:
         print(e)
-    ###
+    
+    if pickle_only:
+        return    
+
+    # csv
+    print('saving history in csv format...')
+    historyInDrivePath = save_path + 'split_'+ str(split_num) + '_history.csv'
+    pd.DataFrame(history).to_csv(historyInDrivePath) #gdrive
+    pd.DataFrame(history).to_csv('split_'+ str(split_num) + '_history.csv')  #local
     print('plotting and saving train test graphs...')
-    # summarize history for accuracy
+    
+    # accuracy graph
     plt.figure(figsize=(10, 6))
     plt.plot(history['acc'])
     plt.plot(history['val_acc'])
@@ -32,7 +89,8 @@ def save_plot_history(history, save_path,split_num=0):
     plt.grid(True)
     plt.savefig('split_'+str(split_num)+'_accuracy.png',bbox_inches='tight') #local
     plt.savefig( save_path + 'split_'+ str(split_num) + '_accuracy.png',bbox_inches='tight') #gdrive
-    # summarize history for loss
+    
+    # loss graph
     plt.figure(figsize=(10, 6))
     plt.plot(history['loss'])
     plt.plot(history['val_loss'])
@@ -43,8 +101,6 @@ def save_plot_history(history, save_path,split_num=0):
     plt.grid(True)
     plt.savefig('split_'+str(split_num)+'_loss.png',bbox_inches='tight')  #local
     plt.savefig( save_path + 'split_'+ str(split_num) + '_loss.png',bbox_inches='tight')  #gdrive
-    ###
-
 
 
 def evaluate_accuracy_method1(file_):
