@@ -10,19 +10,40 @@ class SaveTrainingCurves(CB):
 
     def __init__(self, dataset = 'rwf2000', split_num = 0, **kargs):
         super(SaveTrainingCurves,self).__init__(**kargs)
-        self.acc = []
-        self.val_acc = []
-        self.loss = []
-        self.val_loss = []
+
         self.save_path = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'
-        self.split_num = split_num
+        self.split_num = split_num        
+        historyInDrivePath = self.save_path + 'split_'+ str(self.split_num) + '_history.csv'
+
+        history = None
+        try:
+            history = pd.read_csv(historyInDrivePath)
+            history = history.reset_index().to_dict(orient='list')
+        except:
+            pass
+        if history is not None: 
+            self.acc = history['acc']
+            self.val_acc = history['val_acc']
+            self.loss = history['loss']
+            self.val_loss = history['val_loss']
+            self.index = history['index']
+        else:
+            self.acc = []
+            self.val_acc = []
+            self.loss = []
+            self.val_loss = []
+            self.index = []
     
     def on_epoch_end(self, epoch, logs = {}):
         self.acc.append(logs.get('acc'))
         self.val_acc.append(logs.get('val_acc'))
         self.loss.append(logs.get('loss'))
         self.val_loss.append(logs.get('val_loss'))
-        history = {'acc':self.acc, 'val_acc':self.val_acc,'loss':self.loss,'val_loss':self.val_loss }
+        if len(self.index) == 0:
+            self.index.append(0)
+        else:
+            self.index.append( self.index[-1] + 1 )    
+        history = {'index':self.index, 'acc':self.acc, 'val_acc':self.val_acc,'loss':self.loss,'val_loss':self.val_loss}
         # csv
         historyInDrivePath = self.save_path + 'split_'+ str(self.split_num) + '_history.csv'
         pd.DataFrame(history).to_csv(historyInDrivePath) # gdrive
