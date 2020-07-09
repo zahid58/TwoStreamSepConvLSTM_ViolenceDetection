@@ -3,7 +3,7 @@ import pandas as pd
 import shutil
 import numpy as np 
 import pickle
-import tensorflow.keras.callbacks.Callback as CB
+from tensorflow.keras.callbacks import Callback as CB
 
 
 class SaveTrainingCurves(CB):
@@ -42,6 +42,7 @@ class SaveTrainingCurves(CB):
         plt.grid(True)
         plt.savefig('split_'+str(self.split_num)+'_accuracy.png',bbox_inches='tight') # local
         plt.savefig( self.save_path + 'split_'+ str(self.split_num) + '_accuracy.png',bbox_inches='tight') # gdrive
+        plt.close()
         # loss
         plt.figure(figsize=(10, 6))
         plt.plot(history['loss'])
@@ -53,10 +54,10 @@ class SaveTrainingCurves(CB):
         plt.grid(True)
         plt.savefig('split_'+str(self.split_num)+'_loss.png',bbox_inches='tight')  # local
         plt.savefig( self.save_path + 'split_'+ str(self.split_num) + '_loss.png',bbox_inches='tight')  # gdrive
-    
+        plt.close()
 
 
-def save_plot_history(history, save_path,split_num=0,pickle_only=true):
+def save_plot_history(history, save_path,split_num=0,pickle_only=True):
     
     # pickle
     print('saving history in pickle format...')
@@ -89,7 +90,8 @@ def save_plot_history(history, save_path,split_num=0,pickle_only=true):
     plt.grid(True)
     plt.savefig('split_'+str(split_num)+'_accuracy.png',bbox_inches='tight') #local
     plt.savefig( save_path + 'split_'+ str(split_num) + '_accuracy.png',bbox_inches='tight') #gdrive
-    
+    plt.close()
+
     # loss graph
     plt.figure(figsize=(10, 6))
     plt.plot(history['loss'])
@@ -101,7 +103,7 @@ def save_plot_history(history, save_path,split_num=0,pickle_only=true):
     plt.grid(True)
     plt.savefig('split_'+str(split_num)+'_loss.png',bbox_inches='tight')  #local
     plt.savefig( save_path + 'split_'+ str(split_num) + '_loss.png',bbox_inches='tight')  #gdrive
-
+    plt.close()
 
 def evaluate_accuracy_method1(file_):
     test_acc = []
