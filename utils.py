@@ -79,6 +79,12 @@ def lr_scheduler(epoch, lr):
         return lr * decay_rate
     return lr
 
+def save_as_csv(data, save_path, filename, split_num = 0):
+    print('saving',filename,'in csv format...')
+    DrivePath = save_path + 'split_'+ str(split_num) + filename
+    pd.DataFrame(data).to_csv(DrivePath) #gdrive
+    pd.DataFrame(data).to_csv('split_'+ str(split_num) + filename)  #local 
+
 
 def save_plot_history(history, save_path,split_num=0,pickle_only=True):
     

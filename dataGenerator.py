@@ -271,9 +271,9 @@ class DataGenerator(Sequence):
             a=np.arange(112, 208), replace=True)
         return video[:, x-112:x+112, y-112:y+112, :]
 
-    def frame_difference(self, video):
+    def frame_difference(self, video,k=1):
         num_frames = len(video)
-        out = [ video[i+1]-video[i]  for i in range(num_frames-1) ]
+        out = [ video[min(i+k,num_frames-1)]-video[i]  for i in range(num_frames-1) ]
         out.append(video[num_frames-1] - video[num_frames-2])
         return np.array(out,dtype=np.float32)
 
@@ -385,14 +385,14 @@ class DataGenerator(Sequence):
             data = self.upsample_downsample(data,prob=0.5)
             data = self.temporal_elastic_transformation(data,prob=0.20)
             data = self.gaussian_blur(data,prob=0.25,low=1,high=2) 
-            diff_data = self.frame_difference(data)
+            diff_data = self.frame_difference(data, k = 3)
             data = self.pepper(data,prob=0.3,ratio=45)
             data = self.salt(data,prob=0.3,ratio=45)
             data = np.concatenate((data,diff_data),axis=-1)
         else:
             # center cropping only for test generators
             data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
-            diff_data = self.frame_difference(data)
+            diff_data = self.frame_difference(data, k = 3)
             data = np.concatenate((data,diff_data),axis=-1)
 
         data = np.array(data, dtype=np.float32)       
