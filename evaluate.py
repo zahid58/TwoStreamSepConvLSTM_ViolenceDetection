@@ -65,8 +65,8 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
 
 #--------------------------------------------------
 
-print('> getting the model from...', bestModelPath)
-model = load_model(bestModelPath, custom_objects={
+print('> getting the model from...', bestValPath)
+model = load_model(bestValPath, custom_objects={
                       'SepConvLSTM2D': SepConvLSTM2D})
 
 #--------------------------------------------------
@@ -82,7 +82,6 @@ train_results = model.evaluate(
     workers=8,
     max_queue_size=8,
     use_multiprocessing=False,
-    return_dict = True
 )
 
 test_results = model.evaluate(
@@ -92,7 +91,6 @@ test_results = model.evaluate(
     workers=8,
     max_queue_size=8,
     use_multiprocessing=False,
-    return_dict = True
 )
 
 #----------------------------------------------------------
