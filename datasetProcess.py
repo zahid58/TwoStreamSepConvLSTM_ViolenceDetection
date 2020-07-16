@@ -44,7 +44,7 @@ def five_fold_split(dataset_name, source):
     nonFightVideos = []
     for filename in os.listdir(source):
         filepath = os.path.join(source, filename)
-        if filename.endswith('.avi') or filename.endswith('.mpg'):
+        if filename.endswith('.avi') or filename.endswith('.mp4'):
             if dataset_name == 'hockey':
                 if filename.startswith('fi'):
                     fightVideos.append(filepath)

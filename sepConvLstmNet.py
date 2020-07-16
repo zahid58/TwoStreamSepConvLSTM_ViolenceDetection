@@ -49,13 +49,13 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     cnn = Concatenate(axis=-1, name='concatenate_')([frames_cnn, frames_diff_cnn])
     cnn = TimeDistributed( MaxPooling2D((2,2) , name = 'max_pooling_'))(cnn)
 
-    lstm = SepConvLSTM2D( filters = 256, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=0.1, recurrent_dropout=0.1, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(cnn)
+    lstm = SepConvLSTM2D( filters = 128, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=0.1, recurrent_dropout=0.1, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(cnn)
     lstm = BatchNormalization( axis = -1 )(lstm)
     
     x = Flatten()(lstm) 
   
     dropout = 0.3
-    x = Dense(256)(x)
+    x = Dense(128)(x)
     x = LeakyReLU(alpha=0.3)(x)
     x = Dropout(dropout)(x)
     x = Dense(16)(x)

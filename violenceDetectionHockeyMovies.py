@@ -20,9 +20,10 @@ random.seed(42)
 set_seed(42)
 
 
+
 #-----------------------------------
 
-initial_learning_rate = 1e-04
+initial_learning_rate = 2e-04
 dataset = 'movies'
 dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies'}
 crop_dark = {
@@ -42,16 +43,18 @@ input_frame_size = 224
 split_number = 1
 
 preprocess_data = True
-
 create_new_model = True
 
-bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
+if not os.path.exists('/gdrive/My Drive/THESIS/Data/models'):
+    os.makedirs('/gdrive/My Drive/THESIS/Data/models')
+
+bestModelPath = '/gdrive/My Drive/THESIS/Data/models/' + \
     str(dataset) + '_bestModel.h5'
 
-bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
+bestValPath =  '/gdrive/My Drive/THESIS/Data/models/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
 
-epochs = 30
+epochs = 50
 
 learning_rate = None   
 
@@ -95,13 +98,14 @@ if create_new_model:
     print('> creating new model...')
     model =  sepConvLstmNet.getModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable)
     print('new model created')
-    rwfPretrainedPath =  '/gdrive/My Drive/THESIS/Data/thesisModels/seplstm3dcnnTowardsTwoStream/87.50%June11FramePlusFrameDiff_rwf2000_best_val_acc_Model.h5' 
-    print('> loading weights pretrained on rwf dataset from : ', rwfPretrainedPath)
+    rwfPretrainedPath = '/gdrive/My Drive/THESIS/Data/models/rwf2000_best_val_acc_Model.h5'
+    print('> loading weights pretrained on rwf dataset from', rwfPretrainedPath)
     model.load_weights(rwfPretrainedPath)
-    print('> pretrained weights loaded !')
+    print('pretrained weights loaded !')
     optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
     model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['acc'])
     print('> Dropout on FC layer : ', model.layers[-2].rate)
+    print('> new model created')
 else:
     print('> getting the model from...', bestModelPath)
     model = load_model(bestModelPath, custom_objects={
@@ -119,10 +123,10 @@ print('> Summary of the model : ')
 model.summary(line_length=140)
 print('> Optimizer : ', model.optimizer.get_config())
 
-dot_img_file = 'model_architecture.png'
+dot_img_file = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset) + '/model_architecture.png'
 print('> plotting the model architecture and saving at ', dot_img_file)
-plot_model(model, to_file=dot_img_file, show_shapes=True)
-
+#plot_model(model, to_file='model_architecture.png', show_shapes=True) #local
+#plot_model(model, to_file=dot_img_file, show_shapes=True) #drive
 
 #--------------------------------------------------
 
@@ -156,4 +160,3 @@ history = model.fit(
 )
 
 #----------------------------------------------------------
-

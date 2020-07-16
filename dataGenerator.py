@@ -19,8 +19,9 @@ class DataGenerator(Sequence):
         If you want to load file with other data format, please fix the method of "load_data" as you want
     """
 
-    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=True, resize=224):
+    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=False, resize=224, dataset=None):
         # Initialize the params
+        self.dataset = dataset
         self.batch_size = batch_size
         self.directory = directory
         self.shuffle = shuffle
@@ -169,7 +170,6 @@ class DataGenerator(Sequence):
         video = video[:, y_start:y_end, x_start:x_end, :]
         return video
 
-
     def random_shear(self, video, intensity, prob=0.5, row_axis=0, col_axis=1, channel_axis=2,
                      fill_mode='nearest', cval=0., interpolation_order=1):
         s = np.random.rand()
@@ -250,71 +250,45 @@ class DataGenerator(Sequence):
         return Superpixel(p_replace=p_replace,n_segments=n_segments)(video)    
 
     def resize_frames(self, video):
+        video = np.array(video, dtype=np.float32)
+        if (video.shape[1]==self.resize and video.shape[2]==self.resize):
+            return video
         resized = []
         for i in range(video.shape[0]):
             x = cv2.resize(
                 video[i], (self.resize, self.resize)).astype(np.float32)
             resized.append(x)
-        return np.array(resized)
+        return np.array(resized,dtype=np.float32)
     
     def dynamic_crop(self, video, opt_flows):
         return DynamicCrop()(video, opt_flows)
     
     def random_crop(self, video, prob=0.5):
-        # gives back a randomly cropped 224 X 224 from a video with frames 320 x 320
         s = np.random.rand()
         if s > prob:
             return self.resize_frames(video)
-        x = np.random.choice(
-            a=np.arange(112, 208), replace=True)
-        y = np.random.choice(
-            a=np.arange(112, 208), replace=True)
-        return video[:, x-112:x+112, y-112:y+112, :]
+        # gives back a randomly cropped 224 X 224 from a video with frames 320 x 320
+        if self.dataset == 'rwf2000':
+            x = np.random.choice(
+                a=np.arange(112, 320-112), replace=True)
+            y = np.random.choice(
+                a=np.arange(112, 320-112), replace=True)
+            video = video[:, x-112:x+112, y-112:y+112, :]
+        else:
+            x = np.random.choice(
+                a=np.arange(80, 224-80), replace=True)
+            y = np.random.choice(
+                a=np.arange(80, 224-80), replace=True)
+            video = video[:, x-80:x+80, y-80:y+80, :]
+            video = self.resize_frames(video)
+        # get cropped video
+        return video 
 
     def frame_difference(self, video,k=1):
         num_frames = len(video)
         out = [ video[min(i+k,num_frames-1)]-video[i]  for i in range(num_frames-1) ]
         out.append(video[num_frames-1] - video[num_frames-2])
         return np.array(out,dtype=np.float32)
-
-
-    def farneback(self, video):
-        """Calculate dense optical flow of input video using Farneback Algorithm
-        Args:
-            video: the input video with shape of [frames,height,width,channel]. dtype=np.array
-        Returns:
-            flows_x: the optical flow at x-axis, with the shape of [frames,height,width,channel]
-            flows_y: the optical flow at y-axis, with the shape of [frames,height,width,channel]
-        """
-        # initialize the list of optical flows
-        gray_video = []
-        for i in range(len(video)):
-            img = cv2.cvtColor(video[i], cv2.COLOR_RGB2GRAY)
-            gray_video.append(np.reshape(img,(224,224,1)))
-        flows = []
-        for i in range(0,len(video)-1):
-            # calculate optical flow between each pair of frames
-            flow = cv2.calcOpticalFlowFarneback(gray_video[i], gray_video[i+1], None, 0.5, 3, 15, 3, 5, 1.2, cv2.OPTFLOW_FARNEBACK_GAUSSIAN)
-            # subtract the mean in order to eliminate the movement of camera
-            flow[..., 0] -= np.mean(flow[..., 0])
-            flow[..., 1] -= np.mean(flow[..., 1])
-            # normalize each component in optical flow
-            flow[..., 0] = cv2.normalize(flow[..., 0],None,0,255,cv2.NORM_MINMAX)
-            flow[..., 1] = cv2.normalize(flow[..., 1],None,0,255,cv2.NORM_MINMAX)
-            # Add into list 
-            flows.append(flow)           
-        # Repeating the last frame twice, for matching with number of frames in video
-        last_frame = flows[-1]
-        flows.append(last_frame)	   
-        return np.array(flows, dtype=np.float32)
-
-
-    def getOpticalFlow(self, video):
-        flow = self.farneback(video)
-        # Adding another channel as Mobilenet expects 3 channels
-        zero_channel = np.zeros((self.target_frames, self.resize, self.resize, 1))
-        flow = np.concatenate((flow, zero_channel), axis=-1)
-        return flow
 
     def pepper(self, video, prob = 0.5, ratio = 100):
         s = np.random.rand()
@@ -360,7 +334,7 @@ class DataGenerator(Sequence):
     def temporal_elastic_transformation(self, video, prob=0.5):
         s = np.random.rand()
         if s > prob:
-            return video 
+            return video    
         return TemporalElasticTransformation()(video)
            
 
@@ -380,19 +354,20 @@ class DataGenerator(Sequence):
             data = self.color_jitter(data, prob = 1)
             data = self.random_flip(data, prob=0.50)
             data = self.random_crop(data, prob=0.80)
-            data = self.random_rotation(data, rg=25, prob=0.80)
-            data = self.inverse_order(data,prob=0.15)
+            data = self.random_rotation(data, rg=25, prob=1)
+            data = self.inverse_order(data,prob=0.1)
             data = self.upsample_downsample(data,prob=0.5)
-            data = self.temporal_elastic_transformation(data,prob=0.20)
-            data = self.gaussian_blur(data,prob=0.25,low=1,high=2) 
-            diff_data = self.frame_difference(data, k = 3)
-            data = self.pepper(data,prob=0.3,ratio=45)
-            data = self.salt(data,prob=0.3,ratio=45)
+            data = self.temporal_elastic_transformation(data,prob=0.2)
+            data = self.gaussian_blur(data,prob=0.2,low=1,high=2) 
+            diff_data = self.frame_difference(data)
+            data = self.pepper(data,prob=0.3,ratio=50)
+            data = self.salt(data,prob=0.3,ratio=50)
             data = np.concatenate((data,diff_data),axis=-1)
         else:
             # center cropping only for test generators
-            data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
-            diff_data = self.frame_difference(data, k = 3)
+            if self.dataset == 'rwf2000':
+                data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
+            diff_data = self.frame_difference(data)
             data = np.concatenate((data,diff_data),axis=-1)
 
         data = np.array(data, dtype=np.float32)       
@@ -401,6 +376,7 @@ class DataGenerator(Sequence):
         data[...,:3] = self.normalize(data[...,:3])
         data[...,3:] = self.normalize(data[...,3:])
         return data
+
 
 
 # Demo code
