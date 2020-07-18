@@ -354,14 +354,14 @@ class DataGenerator(Sequence):
             data = self.color_jitter(data, prob = 1)
             data = self.random_flip(data, prob=0.50)
             data = self.random_crop(data, prob=0.80)
-            data = self.random_rotation(data, rg=25, prob=1)
-            data = self.inverse_order(data,prob=0.1)
+            data = self.random_rotation(data, rg=25, prob=0.8)
+            data = self.inverse_order(data,prob=0.15)
             data = self.upsample_downsample(data,prob=0.5)
             data = self.temporal_elastic_transformation(data,prob=0.2)
             data = self.gaussian_blur(data,prob=0.2,low=1,high=2) 
             diff_data = self.frame_difference(data)
-            data = self.pepper(data,prob=0.3,ratio=50)
-            data = self.salt(data,prob=0.3,ratio=50)
+            data = self.pepper(data,prob=0.3,ratio=45)
+            data = self.salt(data,prob=0.3,ratio=45)
             data = np.concatenate((data,diff_data),axis=-1)
         else:
             # center cropping only for test generators
