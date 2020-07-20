@@ -41,21 +41,26 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     frames_cnn = TimeDistributed( frames_cnn,name='frames_CNN' )( frames_input )
     frames_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_1_' )( frames_cnn)
     frames_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_1_' )(frames_cnn)
-  
+    frames_cnn = TimeDistributed( MaxPooling2D((2,2) , name = 'max_pooling_1'))(frames_cnn)
+
     frames_diff_cnn = TimeDistributed( frames_diff_cnn,name='frames_diff_CNN' )(frames_diff_input)
     frames_diff_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_2_' )(frames_diff_cnn)
     frames_diff_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_2_' )(frames_diff_cnn)
+    frames_diff_cnn = TimeDistributed( MaxPooling2D((2,2) , name = 'max_pooling_2'))(frames_diff_cnn)
 
-    cnn = Concatenate(axis=-1, name='concatenate_')([frames_cnn, frames_diff_cnn])
-    cnn = TimeDistributed( MaxPooling2D((2,2) , name = 'max_pooling_'))(cnn)
+    frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=0.2, recurrent_dropout=0.2, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
+    frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
 
-    lstm = SepConvLSTM2D( filters = 256, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=0.25, recurrent_dropout=0.25, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(cnn)
-    lstm = BatchNormalization( axis = -1 )(lstm)
+    frames_diff_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=0.2, recurrent_dropout=0.2, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
+    frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
+
+    lstm = Concatenate(axis=-1, name='concatenate_')([frames_lstm, frames_diff_lstm])
+    
     
     x = Flatten()(lstm) 
   
     dropout = 0.3
-    x = Dense(256)(x)
+    x = Dense(128)(x)
     x = LeakyReLU(alpha=0.3)(x)
     x = Dropout(dropout)(x)
     x = Dense(16)(x)

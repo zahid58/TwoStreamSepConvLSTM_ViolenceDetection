@@ -23,7 +23,7 @@ set_seed(42)
 
 #-----------------------------------
 
-initial_learning_rate = 2e-04
+initial_learning_rate = 4e-04
 dataset = 'movies'
 dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies'}
 crop_dark = {
@@ -54,14 +54,14 @@ bestModelPath = '/gdrive/My Drive/THESIS/Data/models/' + \
 bestValPath =  '/gdrive/My Drive/THESIS/Data/models/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
 
-epochs = 50
+epochs = 30
 
 learning_rate = None   
 
 cnn_trainable = True
 
 ###################################################
-
+print('> split_number :',split_number)
 if preprocess_data:
     if os.path.exists('{}'.format(dataset)):
         shutil.rmtree('{}'.format(dataset))
@@ -98,7 +98,7 @@ if create_new_model:
     print('> creating new model...')
     model =  sepConvLstmNet.getModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable)
     print('new model created')
-    rwfPretrainedPath = '/gdrive/My Drive/THESIS/Data/models/rwf2000_best_val_acc_Model.h5'
+    rwfPretrainedPath = '/gdrive/My Drive/THESIS/Data/pretrainedModels/3/88.50rwf2000_best_val_acc_Model.h5'
     print('> loading weights pretrained on rwf dataset from', rwfPretrainedPath)
     model.load_weights(rwfPretrainedPath)
     print('pretrained weights loaded !')
