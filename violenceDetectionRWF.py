@@ -31,6 +31,7 @@ batch_size = 4
 vid_len = 32
 dataset_frame_size = 320
 input_frame_size = 224
+frame_diff_interval = 1
 
 ###################################################
 
@@ -65,7 +66,9 @@ train_generator = DataGenerator(directory='{}/processed/train'.format(dataset),
                                 one_hot=False,
                                 sample=False,
                                 resize=input_frame_size,
-                                target_frames = vid_len)
+                                target_frames = vid_len,
+                                frame_diff_interval = frame_diff_interval,
+                                dataset = dataset)
 
 test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                batch_size=batch_size,
@@ -74,14 +77,16 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                one_hot=False,
                                sample=False,
                                resize=input_frame_size,
-                               target_frames = vid_len)
+                               target_frames = vid_len,
+                               frame_diff_interval = frame_diff_interval,
+                               dataset = dataset)
 
 #--------------------------------------------------
 
 print('> cnn_trainable : ',cnn_trainable)
 if create_new_model:
     print('> creating new model...')
-    model =  sepConvLstmNet.getModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable)
+    model =  sepConvLstmNet.getModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval)
     optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
     model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['acc'])
     print('> Dropout on FC layer : ', model.layers[-2].rate)

@@ -19,7 +19,7 @@ class DataGenerator(Sequence):
         If you want to load file with other data format, please fix the method of "load_data" as you want
     """
 
-    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=False, resize=224, dataset=None):
+    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=False, resize=224, frame_diff_interval=1, dataset=None):
         # Initialize the params
         self.dataset = dataset
         self.batch_size = batch_size
@@ -30,6 +30,7 @@ class DataGenerator(Sequence):
         self.target_frames = target_frames
         self.sample = sample
         self.resize = resize
+        self.frame_diff_interval = frame_diff_interval
         # Load all the save_path of files, and create a dictionary that save the pair of "data:label"
         self.X_path, self.Y_dict = self.search_data()
         # Print basic statistics information
@@ -284,10 +285,12 @@ class DataGenerator(Sequence):
         # get cropped video
         return video 
 
-    def frame_difference(self, video,k=1):
+    def frame_difference(self, video):
         num_frames = len(video)
-        out = [ video[min(i+k,num_frames-1)]-video[i]  for i in range(num_frames-1) ]
-        out.append(video[num_frames-1] - video[num_frames-2])
+        k = self.frame_diff_interval
+        out = []
+        for i in range(num_frames - k):
+            out.append(video[i+k] - video[i])
         return np.array(out,dtype=np.float32)
 
     def pepper(self, video, prob = 0.5, ratio = 100):
@@ -362,20 +365,19 @@ class DataGenerator(Sequence):
             diff_data = self.frame_difference(data)
             data = self.pepper(data,prob=0.3,ratio=45)
             data = self.salt(data,prob=0.3,ratio=45)
-            data = np.concatenate((data,diff_data),axis=-1)
         else:
             # center cropping only for test generators
             if self.dataset == 'rwf2000':
                 data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
             diff_data = self.frame_difference(data)
-            data = np.concatenate((data,diff_data),axis=-1)
 
         data = np.array(data, dtype=np.float32)       
-        assert (data.shape == (self.target_frames,self.resize, self.resize,6))
+        assert (data.shape == (self.target_frames,self.resize, self.resize,3)), str(data.shape)
+        assert (diff_data.shape == (self.target_frames - self.frame_diff_interval, self.resize, self.resize, 3)), str(data.shape)
         # normalize  images
-        data[...,:3] = self.normalize(data[...,:3])
-        data[...,3:] = self.normalize(data[...,3:])
-        return data
+        data = self.normalize(data)
+        diff_data = self.normalize(diff_data)
+        return [data, diff_data]
 
 
 

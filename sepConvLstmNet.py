@@ -11,7 +11,7 @@ from tensorflow.keras.regularizers import l2
 from tensorflow.python.keras import backend as K
 from customLayers import SepConvLSTM2D
 
-def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, weight_decay = 0.00005):
+def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, weight_decay = 0.00005, frame_diff_interval = 1):
     """parameters:
     size = height/width of each frame,
     seq_len = number of frames in each sequence,
@@ -19,10 +19,9 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
        returns:
     model
     """
-    inputs = Input(shape=(seq_len, size, size, 6),name='input')
     
-    frames_input = Lambda( lambda x: x[...,:3]  , name='frames_input', output_shape=(seq_len, size, size, 3) ) (inputs)
-    frames_diff_input = Lambda( lambda x: x[...,3:] , name='frames_diff_input', output_shape=(seq_len, size, size, 3) ) (inputs)
+    frames_input = Input(shape=(seq_len, size, size, 3),name='frames_input')
+    frames_diff_input = Input(shape=(seq_len - frame_diff_interval, size, size, 3),name='frames_diff_input')
     
     frames_cnn = MobileNetV2( input_shape = (size,size,3), alpha=0.35, weights='imagenet', include_top=False )
     frames_cnn = Model( inputs=[frames_cnn.layers[0].input],outputs=[frames_cnn.layers[-30].output] ) # taking only upto block 13
@@ -68,7 +67,7 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     x = Dropout(dropout)(x)
     predictions = Dense(1, activation='sigmoid')(x)
     
-    model = Model(inputs=[inputs], outputs=predictions)
+    model = Model(inputs=[frames_input, frames_diff_input], outputs=predictions)
     return model
 
 

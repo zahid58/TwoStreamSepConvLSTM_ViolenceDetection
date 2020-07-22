@@ -37,6 +37,7 @@ vid_len = 32
 
 dataset_frame_size = 224
 input_frame_size = 224
+frame_diff_interval = 1
 
 ###################################################
 
@@ -80,6 +81,7 @@ train_generator = DataGenerator(directory='{}/processed/train'.format(dataset),
                                     sample = False,
                                     resize = input_frame_size,
                                     target_frames=vid_len,
+                                    frame_diff_interval = frame_diff_interval,
                                     dataset=dataset)
 
 test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
@@ -90,13 +92,14 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                     sample = False,
                                     resize = input_frame_size,
                                     target_frames=vid_len,
+                                    frame_diff_interval = frame_diff_interval,
                                     dataset=dataset)
 
 #--------------------------------------------------
 print('> cnn_trainable : ',cnn_trainable)
 if create_new_model:
     print('> creating new model...')
-    model =  sepConvLstmNet.getModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable)
+    model =  sepConvLstmNet.getModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval)
     print('new model created')
     rwfPretrainedPath = '/gdrive/My Drive/THESIS/Data/pretrainedModels/3/88.50rwf2000_best_val_acc_Model.h5'
     print('> loading weights pretrained on rwf dataset from', rwfPretrainedPath)
