@@ -91,13 +91,18 @@ class DataGenerator(Sequence):
             np.random.shuffle(self.indexes)
 
     def data_generation(self, batch_path):
-        # load data into memory, you can change the np.load to any method you want
-        batch_x = [self.load_data(x) for x in batch_path]
+        # load data into memory
+        batch_data = []
+        batch_diff_data = []
+        for x in batch_path:
+            data, diff_data = self.load_data(x)
+            batch_data.append(data)
+            batch_diff_data.append(diff_data)
+        batch_data = np.array(batch_data)
+        batch_diff_data = np.array(batch_diff_data)
         batch_y = [self.Y_dict[x] for x in batch_path]
-        # transfer the data format and take one-hot coding for labels
-        batch_x = np.array(batch_x)
         batch_y = np.array(batch_y)
-        return batch_x, batch_y
+        return [batch_data, batch_diff_data], batch_y
 
     def normalize(self, data):
         data = (data / 255.0).astype(np.float32)
@@ -371,14 +376,16 @@ class DataGenerator(Sequence):
                 data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
             diff_data = self.frame_difference(data)
 
-        data = np.array(data, dtype=np.float32)       
-        assert (data.shape == (self.target_frames,self.resize, self.resize,3)), str(data.shape)
-        assert (diff_data.shape == (self.target_frames - self.frame_diff_interval, self.resize, self.resize, 3)), str(data.shape)
+        data = np.array(data, dtype=np.float32)     
+        
         # normalize  images
         data = self.normalize(data)
         diff_data = self.normalize(diff_data)
-        return [data, diff_data]
 
+        assert (data.shape == (self.target_frames,self.resize, self.resize,3)), str(data.shape)
+        assert (diff_data.shape == (self.target_frames - self.frame_diff_interval, self.resize, self.resize, 3)), str(data.shape)
+
+        return data, diff_data
 
 
 # Demo code

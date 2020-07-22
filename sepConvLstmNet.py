@@ -53,7 +53,7 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     frames_diff_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=0.2, recurrent_dropout=0.2, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
     frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
 
-    lstm = Concatenate(axis=0, name='concatenate_')([frames_lstm, frames_diff_lstm])
+    lstm = Concatenate(axis=-1, name='concatenate_')([frames_lstm, frames_diff_lstm])
     
     
     x = Flatten()(lstm) 

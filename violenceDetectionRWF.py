@@ -37,7 +37,7 @@ frame_diff_interval = 1
 
 preprocess_data = False
 
-create_new_model = False
+create_new_model = True
 
 bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_bestModel.h5'
@@ -45,7 +45,7 @@ bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
 bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
 
-epochs = 5
+epochs = 50
 
 learning_rate = None   
 
