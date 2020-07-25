@@ -40,12 +40,10 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     frames_cnn = TimeDistributed( frames_cnn,name='frames_CNN' )( frames_input )
     frames_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_1_' )( frames_cnn)
     frames_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_1_' )(frames_cnn)
-    frames_cnn = TimeDistributed( MaxPooling2D((2,2) , name = 'max_pooling_1'))(frames_cnn)
 
     frames_diff_cnn = TimeDistributed( frames_diff_cnn,name='frames_diff_CNN' )(frames_diff_input)
     frames_diff_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_2_' )(frames_diff_cnn)
     frames_diff_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_2_' )(frames_diff_cnn)
-    frames_diff_cnn = TimeDistributed( MaxPooling2D((2,2) , name = 'max_pooling_2'))(frames_diff_cnn)
 
     frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=0.2, recurrent_dropout=0.2, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
     frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
@@ -55,6 +53,7 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
 
     lstm = Concatenate(axis=-1, name='concatenate_')([frames_lstm, frames_diff_lstm])
     
+    lstm = MaxPooling2D((2,2) , name = 'max_pooling_')(lstm)
     
     x = Flatten()(lstm) 
   

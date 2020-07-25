@@ -91,7 +91,7 @@ class DataGenerator(Sequence):
             np.random.shuffle(self.indexes)
 
     def data_generation(self, batch_path):
-        # load data into memory
+        # loading X
         batch_data = []
         batch_diff_data = []
         for x in batch_path:
@@ -100,6 +100,7 @@ class DataGenerator(Sequence):
             batch_diff_data.append(diff_data)
         batch_data = np.array(batch_data)
         batch_diff_data = np.array(batch_diff_data)
+        # loading Y
         batch_y = [self.Y_dict[x] for x in batch_path]
         batch_y = np.array(batch_y)
         return [batch_data, batch_diff_data], batch_y
@@ -109,9 +110,6 @@ class DataGenerator(Sequence):
         mean = np.mean(data)
         std = np.std(data)
         return (data-mean) / std
-        #mean = np.mean(data, axis=tuple(range(data.ndim-1)))
-        #std = np.std(data, axis=tuple(range(data.ndim-1))) + 1e-8
-        # return ((data-mean)/std)
 
     def random_flip(self, video, prob):
         s = np.random.rand()
