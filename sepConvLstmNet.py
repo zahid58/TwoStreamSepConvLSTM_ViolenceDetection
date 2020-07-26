@@ -53,7 +53,7 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
 
     lstm = Concatenate(axis=-1, name='concatenate_')([frames_lstm, frames_diff_lstm])
     
-    lstm = MaxPooling2D((2,2) , name = 'max_pooling_')(lstm)
+    lstm = AveragePooling2D((2,2) , name = 'max_pooling_')(lstm)
     
     x = Flatten()(lstm) 
   
