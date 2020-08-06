@@ -45,18 +45,11 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     frames_diff_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_2_' )(frames_diff_cnn)
     frames_diff_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_2_' )(frames_diff_cnn)
 
-    lstm_dropout=0.2
-
-    frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='valid', return_sequences=True, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1a', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
+    lstm_dropout = 0.2
+    frames_lstm = Bidirectional(SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay)), name = 'Bidirectional_SepconvLSTM_Frames')(frames_cnn)
     frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
 
-    frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1b', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_lstm)
-    frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
-    
-    frames_diff_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='valid', return_sequences=True, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_2a', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
-    frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
-
-    frames_diff_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_2b', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_lstm)
+    frames_diff_lstm = Bidirectional(SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay)), name = 'Bidirectional_SepconvLSTM_Frames_Diff')(frames_diff_cnn)
     frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
 
     lstm = Concatenate(axis=-1, name='concatenate_')([frames_lstm, frames_diff_lstm])
@@ -65,18 +58,15 @@ def getModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True
     
     x = Flatten()(lstm) 
   
-    dropout = 0.3
+    dense_dropout = 0.3
     x = Dense(128)(x)
-    x = LeakyReLU(alpha=0.1)(x)
-    x = Dropout(dropout)(x)
+    x = LeakyReLU(alpha=0.2)(x)
+    x = Dropout(dense_dropout)(x)
     x = Dense(16)(x)
     x = LeakyReLU(alpha=0.1)(x)
-    x = Dropout(dropout)(x)
+    x = Dropout(dense_dropout)(x)
     predictions = Dense(1, activation='sigmoid')(x)
     
     model = Model(inputs=[frames_input, frames_diff_input], outputs=predictions)
     return model
-
-
-
 
