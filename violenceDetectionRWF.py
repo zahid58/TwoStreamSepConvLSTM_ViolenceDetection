@@ -3,6 +3,7 @@ from customLayers import SepConvLSTM2D
 import pickle
 import shutil
 import sepConvLstmNet
+import cnn_lstm_models
 import rwfRGBonly
 from utils import *
 from dataGenerator import *
@@ -21,7 +22,8 @@ random.seed(42)
 set_seed(42)
 
 #-----------------------------------
-
+model_to_train = "proposed" # [ "proposed", "convlstm", "biconvlstm"]
+mode = "both" # ["both","only_frames","only_differneces"]
 initial_learning_rate = 4e-04
 dataset = 'rwf2000'
 crop_dark = {
@@ -32,7 +34,8 @@ vid_len = 32
 dataset_frame_size = 320
 input_frame_size = 224
 frame_diff_interval = 1
-
+if model_to_train == "convlstm" or model_to_train == "biconvlstm":
+    mode = "only_differences"
 ###################################################
 
 preprocess_data = False
@@ -68,7 +71,8 @@ train_generator = DataGenerator(directory='{}/processed/train'.format(dataset),
                                 resize=input_frame_size,
                                 target_frames = vid_len,
                                 frame_diff_interval = frame_diff_interval,
-                                dataset = dataset)
+                                dataset = dataset,
+                                mode = mode)
 
 test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                batch_size=batch_size,
@@ -79,14 +83,22 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                resize=input_frame_size,
                                target_frames = vid_len,
                                frame_diff_interval = frame_diff_interval,
-                               dataset = dataset)
+                               dataset = dataset,
+                               mode = mode)
 
 #--------------------------------------------------
 
 print('> cnn_trainable : ',cnn_trainable)
 if create_new_model:
     print('> creating new model...')
-    model =  sepConvLstmNet.getModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval)
+    
+    if model_to_train == "proposed":
+        model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode)
+    elif model_to_train == "convlstm":
+        model =  cnn_lstm_models.getConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval)
+    elif model_to_train == "biconvlstm":
+        model =  cnn_lstm_models.getBiConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval)
+    
     optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
     model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['acc'])
     print('> Dropout on FC layer : ', model.layers[-2].rate)
@@ -95,13 +107,8 @@ else:
     print('> getting the model from...', bestModelPath)
     model = load_model(bestModelPath, custom_objects={
                       'SepConvLSTM2D': SepConvLSTM2D})
-    # freezing/unfreezing the CNN
-    # for layer in model.layers[1].layer.layers: 
-    #    layer.trainable = cnn_trainable 
     if learning_rate is not None:
         K.set_value(model.optimizer.lr, learning_rate)  
-    # recompiling the model          
-    # model.compile(optimizer=model.optimizer, loss='binary_crossentropy', metrics=['acc'])
     print('> Dropout on FC layer : ', model.layers[-2].rate)
 
 print('> Summary of the model : ')
@@ -145,3 +152,17 @@ history = model.fit(
 
 #----------------------------------------------------------
 
+
+
+
+
+
+
+
+
+    # freezing/unfreezing the CNN
+    # for layer in model.layers[1].layer.layers: 
+    #    layer.trainable = cnn_trainable 
+
+    # recompiling the model          
+    # model.compile(optimizer=model.optimizer, loss='binary_crossentropy', metrics=['acc'])

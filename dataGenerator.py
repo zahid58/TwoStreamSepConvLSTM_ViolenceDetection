@@ -19,7 +19,7 @@ class DataGenerator(Sequence):
         If you want to load file with other data format, please fix the method of "load_data" as you want
     """
 
-    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=False, resize=224, frame_diff_interval=1, dataset=None):
+    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=False, resize=224, frame_diff_interval=1, dataset=None, mode="both"): 
         # Initialize the params
         self.dataset = dataset
         self.batch_size = batch_size
@@ -29,6 +29,7 @@ class DataGenerator(Sequence):
         self.one_hot = one_hot
         self.target_frames = target_frames
         self.sample = sample
+        self.mode = mode  #["only_frames","only_differences", "both"]
         self.resize = resize
         self.frame_diff_interval = frame_diff_interval
         # Load all the save_path of files, and create a dictionary that save the pair of "data:label"
@@ -354,6 +355,17 @@ class DataGenerator(Sequence):
             data = self.uniform_sampling(
                 video=data, target_frames=self.target_frames)
 
+        if self.mode == "both":
+            frames = True
+            differences = True
+        elif self.mode == "only_frames":
+            frames = True
+            differences = False
+        elif self.mode == "only_differences":
+            frames = False
+            differences = True
+
+
         # data augmentation
         if self.data_aug:
             data = self.random_brightness(data, (0.5, 1.5))
@@ -365,25 +377,33 @@ class DataGenerator(Sequence):
             data = self.upsample_downsample(data,prob=0.5)
             data = self.temporal_elastic_transformation(data,prob=0.2)
             data = self.gaussian_blur(data,prob=0.2,low=1,high=2) 
-            diff_data = self.frame_difference(data)
-            data = self.pepper(data,prob=0.3,ratio=45)
-            data = self.salt(data,prob=0.3,ratio=45)
+            if differences:
+                diff_data = self.frame_difference(data)
+            if frames:    
+                data = self.pepper(data,prob=0.3,ratio=45)
+                data = self.salt(data,prob=0.3,ratio=45)
         else:
-            # center cropping only for test generators
             if self.dataset == 'rwf2000':
-                data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)
-            diff_data = self.frame_difference(data)
+                data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)  # center cropping only for test generators
+            if differences:
+                diff_data = self.frame_difference(data)
 
-        data = np.array(data, dtype=np.float32)     
-        
-        # normalize  images
-        data = self.normalize(data)
-        diff_data = self.normalize(diff_data)
+        if frames:
+            data = np.array(data, dtype=np.float32)     
+            data = self.normalize(data)
+            assert (data.shape == (self.target_frames,self.resize, self.resize,3)), str(data.shape)
+        if differences:
+            diff_data = np.array(diff_data, dtype=np.float32)
+            diff_data = self.normalize(diff_data)
+            assert (diff_data.shape == (self.target_frames - self.frame_diff_interval, self.resize, self.resize, 3)), str(data.shape)
 
-        assert (data.shape == (self.target_frames,self.resize, self.resize,3)), str(data.shape)
-        assert (diff_data.shape == (self.target_frames - self.frame_diff_interval, self.resize, self.resize, 3)), str(data.shape)
+        if self.mode == "both":
+            return data, diff_data
+        elif self.mode == "only_frames":
+            return data
+        elif self.mode == "only_differences":
+            return diff_data
 
-        return data, diff_data
 
 
 # Demo code
