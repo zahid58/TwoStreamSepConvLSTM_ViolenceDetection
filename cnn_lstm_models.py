@@ -30,7 +30,7 @@ def getConvLSTM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = T
     frames_cnn = TimeDistributed( frames_cnn,name='frames_CNN' )( frames_input )
 
     lstm_dropout = 0.2
-    lstm = ConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames)
+    lstm = ConvLSTM2D(filters=256, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
     lstm = MaxPooling2D((2,2))(lstm)
     x = Flatten()(lstm) 
 
@@ -122,8 +122,8 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         frames_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_1_' )(frames_cnn)
 
         frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
-	    frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
-
+        frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
+        
     if differences:
 
         frames_diff_input = Input(shape=(seq_len - frame_diff_interval, size, size, 3),name='frames_diff_input')
