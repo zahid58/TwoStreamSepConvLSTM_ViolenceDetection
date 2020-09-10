@@ -121,8 +121,8 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         frames_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_1_' )( frames_cnn)
         frames_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_1_' )(frames_cnn)
 
-        frames_lstm = Bidirectional(SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay)), name = 'Bidirectional_SepconvLSTM_Frames')(frames_cnn)
-        frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
+        frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
+	    frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
 
     if differences:
 
@@ -137,7 +137,7 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         frames_diff_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_2_' )(frames_diff_cnn)
         frames_diff_cnn = TimeDistributed( Dropout(0.25) ,name='dropout_2_' )(frames_diff_cnn)
 
-        frames_diff_lstm = Bidirectional(SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay)), name = 'Bidirectional_SepconvLSTM_Frames_Diff')(frames_diff_cnn)
+        frames_diff_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
         frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
 
 
