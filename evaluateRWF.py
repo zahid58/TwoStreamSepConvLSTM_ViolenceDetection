@@ -1,3 +1,11 @@
+import os
+os.environ['PYTHONHASHSEED'] = '42'
+from numpy.random import seed, shuffle
+from random import seed as rseed
+from tensorflow.random import set_seed
+seed(42)
+rseed(42)
+set_seed(42)
 import random
 from customLayers import SepConvLSTM2D
 import pickle
@@ -8,16 +16,10 @@ from utils import *
 from dataGenerator import *
 from datasetProcess import *
 from tensorflow.keras.models import load_model
-from tensorflow.random import set_seed
-import os
 import pandas as pd
-from numpy.random import seed, shuffle
-seed(42)
-random.seed(42)
-set_seed(42)
 
 #-----------------------------------
-
+mode = "both"
 dataset = 'rwf2000'
 crop_dark = {
     'rwf2000': (0, 0),
@@ -27,12 +29,13 @@ vid_len = 32
 dataset_frame_size = 320
 input_frame_size = 224
 frame_diff_interval = 1
+
 ###################################################
 
 preprocess_data = False
 
-bestModelPath = '/gdrive/My Drive/THESIS/Data/' + \
-    str(dataset) + '_bestModel.h5'
+currentModelPath = '/gdrive/My Drive/THESIS/Data/' + \
+    str(dataset) + '_currentModel.h5'
 
 bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
@@ -54,7 +57,8 @@ train_generator = DataGenerator(directory='{}/processed/train'.format(dataset),
                                 resize=input_frame_size,
                                 target_frames=vid_len,
                                 frame_diff_interval = frame_diff_interval,
-                                dataset=dataset)
+                                dataset=dataset,
+                                mode = mode)
 
 test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                batch_size=batch_size,
@@ -65,7 +69,8 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                resize=input_frame_size,
                                target_frames=vid_len,
                                frame_diff_interval = frame_diff_interval,
-                               dataset=dataset)
+                               dataset=dataset,
+                               mode=mode)
 
 #--------------------------------------------------
 

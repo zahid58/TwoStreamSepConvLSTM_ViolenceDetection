@@ -1,3 +1,11 @@
+import os
+os.environ['PYTHONHASHSEED'] = '42'
+from numpy.random import seed, shuffle
+from random import seed as rseed
+from tensorflow.random import set_seed
+seed(42)
+rseed(42)
+set_seed(42)
 import random
 from customLayers import SepConvLSTM2D
 import pickle
@@ -13,18 +21,15 @@ from tensorflow.keras.utils import plot_model
 from tensorflow.keras.optimizers import RMSprop, Adam
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback, ModelCheckpoint,LearningRateScheduler
 from tensorflow.python.keras import backend as K
-from tensorflow.random import set_seed
-import os
 import pandas as pd
-from numpy.random import seed, shuffle
-seed(42)
-random.seed(42)
-set_seed(42)
+
 
 #-----------------------------------
-model_to_train = "proposed" # [ "proposed", "convlstm", "biconvlstm"]
-mode = "both" # ["both","only_frames","only_differneces"]
+model_to_train = "biconvlstm" # [ "proposed", "convlstm", "biconvlstm"]
+mode = "only_differences" # ["both","only_frames","only_differneces"]
 initial_learning_rate = 4e-04
+if model_to_train == "biconvlstm":
+    initial_learning_rate = 1e-06
 dataset = 'rwf2000'
 crop_dark = {
     'rwf2000': (0, 0),
@@ -35,7 +40,7 @@ dataset_frame_size = 320
 input_frame_size = 224
 frame_diff_interval = 1
 if model_to_train == "convlstm" or model_to_train == "biconvlstm":
-    mode = "only_differences"
+    mode = "only_differences"  
 ###################################################
 
 preprocess_data = False
@@ -95,9 +100,9 @@ if create_new_model:
     if model_to_train == "proposed":
         model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode)
     elif model_to_train == "convlstm":
-        model =  cnn_lstm_models.getConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval)
+        model =  cnn_lstm_models.getConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode = mode)
     elif model_to_train == "biconvlstm":
-        model =  cnn_lstm_models.getBiConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval)
+        model =  cnn_lstm_models.getBiConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode = mode)
     
     optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
     model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['acc'])

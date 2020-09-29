@@ -95,16 +95,32 @@ class DataGenerator(Sequence):
         # loading X
         batch_data = []
         batch_diff_data = []
-        for x in batch_path:
-            data, diff_data = self.load_data(x)
-            batch_data.append(data)
-            batch_diff_data.append(diff_data)
-        batch_data = np.array(batch_data)
-        batch_diff_data = np.array(batch_diff_data)
+        if self.mode == "both":
+            for x in batch_path:
+                data, diff_data = self.load_data(x)
+                batch_data.append(data)
+                batch_diff_data.append(diff_data)
+            batch_data = np.array(batch_data)
+            batch_diff_data = np.array(batch_diff_data)
+        elif self.mode == "only_frames":
+            for x in batch_path:
+                data = self.load_data(x)
+                batch_data.append(data)
+            batch_data = np.array(batch_data) 
+        elif self.mode == "only_differences":
+            for x in batch_path:
+                diff_data = self.load_data(x)
+                batch_diff_data.append(diff_data)
+            batch_diff_data = np.array(batch_diff_data) 
         # loading Y
         batch_y = [self.Y_dict[x] for x in batch_path]
         batch_y = np.array(batch_y)
-        return [batch_data, batch_diff_data], batch_y
+        if self.mode == "both":
+            return [batch_data, batch_diff_data], batch_y
+        if self.mode == "only_frames":
+            return [batch_data], batch_y            
+        if self.mode == "only_differences":
+            return [batch_diff_data], batch_y
 
     def normalize(self, data):
         data = (data / 255.0).astype(np.float32)

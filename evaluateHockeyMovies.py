@@ -43,8 +43,8 @@ preprocess_data = False
 if not os.path.exists('/gdrive/My Drive/THESIS/Data/models'):
     os.makedirs('/gdrive/My Drive/THESIS/Data/models')
 
-bestModelPath = '/gdrive/My Drive/THESIS/Data/models/' + \
-    str(dataset) + '_bestModel.h5'
+currentModelPath = '/gdrive/My Drive/THESIS/Data/models/' + \
+    str(dataset) + '_currentModel.h5'
 
 bestValPath =  '/gdrive/My Drive/THESIS/Data/models/' + \
     str(dataset) + '_best_val_acc_Model.h5'   

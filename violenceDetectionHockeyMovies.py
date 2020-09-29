@@ -49,8 +49,8 @@ create_new_model = True
 if not os.path.exists('/gdrive/My Drive/THESIS/Data/models'):
     os.makedirs('/gdrive/My Drive/THESIS/Data/models')
 
-bestModelPath = '/gdrive/My Drive/THESIS/Data/models/' + \
-    str(dataset) + '_bestModel.h5'
+currentModelPath = '/gdrive/My Drive/THESIS/Data/models/' + \
+    str(dataset) + '_currentModel.h5'
 
 bestValPath =  '/gdrive/My Drive/THESIS/Data/models/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
@@ -110,8 +110,8 @@ if create_new_model:
     print('> Dropout on FC layer : ', model.layers[-2].rate)
     print('> new model created')
 else:
-    print('> getting the model from...', bestModelPath)
-    model = load_model(bestModelPath, custom_objects={
+    print('> getting the model from...', currentModelPath)
+    model = load_model(currentModelPath, custom_objects={
                       'SepConvLSTM2D': SepConvLSTM2D})
     # freezing/unfreezing the CNN
     # for layer in model.layers[1].layer.layers: 
@@ -134,7 +134,7 @@ print('> plotting the model architecture and saving at ', dot_img_file)
 #--------------------------------------------------
 
 modelcheckpoint = ModelCheckpoint(
-    bestModelPath, monitor='loss', verbose=0, save_best_only=False, mode='auto', save_freq='epoch')
+    currentModelPath, monitor='loss', verbose=0, save_best_only=False, mode='auto', save_freq='epoch')
     
 modelcheckpointVal = ModelCheckpoint(
     bestValPath, monitor='val_acc', verbose=0, save_best_only=True, mode='auto', save_freq='epoch')
