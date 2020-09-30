@@ -1,31 +1,70 @@
+from tensorflow.keras import backend as K
 from tensorflow.keras import Input
 from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.layers import Dense, Flatten, Dropout, ZeroPadding3D, ConvLSTM2D, Reshape, BatchNormalization, Activation, Conv2D
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import TimeDistributed
-from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications import MobileNetV2, VGG16
 from tensorflow.keras.layers import ELU, ReLU, LeakyReLU, Lambda, Dense, Bidirectional, Conv3D, GlobalAveragePooling2D, Multiply, MaxPooling3D, MaxPooling2D, Concatenate, Add, AveragePooling2D 
 from tensorflow.keras.initializers import glorot_uniform, he_normal
 from tensorflow.keras.models import Model
-from tensorflow.keras.applications import ResNet50V2, VGG16, VGG19
 from tensorflow.keras.regularizers import l2
 from tensorflow.python.keras import backend as K
 from customLayers import SepConvLSTM2D
+import torchvision.models as models
+from torchsummary import summary
+import torch.nn as nn
+import torch
+from torch.autograd import Variable
+import numpy as np
+from pytorch2keras import pytorch_to_keras
 
 
-# the original model is implemented in pytorch in the link below.
-# https://github.com/swathikirans/violence-recognition-pytorch/blob/master/createModel.py
-# we made minor adjustments from their proposed model for improvement and reducing overfitting
-# we had to use ResNet50 in place of AlexNet because of limitation of gpu memory. It achieves the same accuracy on hockey and movies. So, this change does not hurt performance of the model
+# loads alexnet pretrained on imagenet and converts it to a keras model 
 
-def getConvLSTM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, weight_decay = 1e-5, frame_diff_interval = 1, lstm_dropout = 0.2, dense_dropout = 0.3, seed = 42,mode = "only_differences"):
+def getAlexNet(pretrained = True):
+    print("> loading alexnet pytorch model...")
+    K.set_image_data_format("channels_first")
+    alex = models.alexnet(pretrained = pretrained, progress = True)
+    alex = nn.Sequential(*list(alex.children())[:-2])
+    input_np = np.random.uniform(0, 1, (1, 3,224,224))
+    input_var = Variable(torch.FloatTensor(input_np))
+    print("> converting alexnet to keras model...")
+    model = pytorch_to_keras(alex, input_var, [(3, 224, 224)], change_ordering = True, verbose = False)
+    alex = None
+    K.set_image_data_format("channels_last")
+    print("> conversion done...")
+    return model
+
+# loads vgg13 pretrained on imagenet and converts it to a keras model 
+
+def getVGG13(pretrained = True):
+    print("> loading VGG13 pytorch model...")
+    K.set_image_data_format("channels_first")
+    vgg13 = models.vgg13(pretrained = pretrained, progress = True)
+    vgg13.features = nn.Sequential(*list(vgg13.features.children())[:-1])
+    vgg13 = nn.Sequential(*list(vgg13.children())[:-2])
+    input_np = np.random.uniform(0, 1, (1, 3,224,224))
+    input_var = Variable(torch.FloatTensor(input_np))
+    print("> converting VGG13 to keras model...")
+    model = pytorch_to_keras(vgg13, input_var, [(3, 224, 224)], change_ordering = True, verbose = False)
+    vgg13 = None
+    K.set_image_data_format("channels_last")
+    print("> conversion done...")
+    return model
+
+
+# the following model is built following the paper given below
+# https://arxiv.org/abs/1709.06531    #https://github.com/swathikirans/violence-recognition-pytorch/blob/master/createModel.py
+
+def getConvLSTM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, weight_decay = 1e-5, frame_diff_interval = 1, lstm_dropout = 0.2, dense_dropout = 0.2, seed = 42,mode = "only_differences"):
     
     if mode == "only_frames":
         frames_input = Input(shape=(seq_len, size, size, 3),name='frames_input')
     elif mode == "only_differences":
         frames_input = Input(shape=(seq_len-frame_diff_interval, size, size, 3),name='frames_input')
 
-    frames_cnn = ResNet50V2(weights = cnn_weight, include_top = False,input_shape = (size, size, 3))
+    frames_cnn = getAlexNet()
 
     print('> cnn_trainable : ', cnn_trainable)
     for layer in frames_cnn.layers:
@@ -37,33 +76,31 @@ def getConvLSTM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = T
     lstm = MaxPooling2D((2,2))(lstm)
     x = Flatten()(lstm) 
 
-    # x = Dense(1000)(x)   # one FC layer reduced to fit in GPU and reduce redundant parameters
-    # x = ReLU()(x)
-    x = Dense(256)(x)
-    x = ReLU()(x)
+    x = Dense(1000, activation='relu')(x) 
+    x = BatchNormalization(axis=-1)(x) 
+    x = Dense(256,activation='relu')(x)
     x = Dropout(dense_dropout, seed = seed)(x)
-    x = Dense(10)(x)
-    x = ReLU()(x)
+    x = Dense(10, activation='relu')(x)
     x = Dropout(dense_dropout, seed = seed)(x)
-    predictions = Dense(1, activation='sigmoid')(x)
+    predictions = Dense(2, activation='softmax')(x)
     
     model = Model(inputs=frames_input, outputs=predictions)
     return model
 
 
 
-# the following model is built the paper given below
-# we made minor adjustments from their proposed model for improvement and reducing overfitting
+# the following model is built following the paper given below
 # https://openaccess.thecvf.com/content_ECCVW_2018/papers/11130/Hanson_Bidirectional_Convolutional_LSTM_for_the_Detection_of_Violence_in_Videos_ECCVW_2018_paper.pdf
 
-def getBiConvLSTM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, weight_decay = 1e-5, frame_diff_interval = 1, lstm_dropout = 0.2, dense_dropout=0.3, seed = 42, mode = "only_differences"):
+def getBiConvLSTM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, weight_decay = 1e-5, frame_diff_interval = 1, lstm_dropout = 0.2, dense_dropout=0.2, seed = 42, mode = "only_differences"):
     
     if mode == "only_frames":
         frames_input = Input(shape=(seq_len, size, size, 3),name='frames_input')
     elif mode == "only_differences":
         frames_input = Input(shape=(seq_len-frame_diff_interval, size, size, 3),name='frames_input')
     
-    frames_cnn = VGG16(weights = cnn_weight, include_top = False, input_shape = (size, size, 3)) 
+    frames_cnn = getVGG13()
+    #frames_cnn = VGG16(input_shape = (size,size,3),  weights='imagenet', include_top = False)
 
     print('> cnn_trainable : ', cnn_trainable)
     for layer in frames_cnn.layers:
@@ -75,27 +112,25 @@ def getBiConvLSTM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable =
     
     elementwise_maxpooling = Lambda(function=lambda x: K.mean(x, axis=1), output_shape=lambda shape: (shape[0],) + shape[2:] , name='ElementWiseMaxPooling')
     lstm = elementwise_maxpooling(lstm)
-
+    
     lstm = MaxPooling2D((2,2))(lstm)
     x = Flatten()(lstm) 
 
-    
-    # x = Dense(1000)(x)   # one FC layer reduced to fit in GPU and reduce redundant parameters
-    # x = ReLU()(x)
-    x = Dense(256)(x)
-    x = ReLU()(x)
+    # x = Dense(1000, activation='tanh')(x)
+    # x = Dropout(dense_dropout, seed = seed)(x)   
+    x = Dense(256, activation ='tanh')(x)
     x = Dropout(dense_dropout, seed = seed)(x)
-    x = Dense(10)(x)
-    x = ReLU()(x)
+    x = Dense(10, activation='tanh')(x)
     x = Dropout(dense_dropout, seed = seed)(x)
-    predictions = Dense(1, activation='sigmoid')(x)
+    predictions = Dense(2, activation='softmax')(x)
     
     model = Model(inputs=frames_input, outputs=predictions)
     return model
 
 
 
-# This is our proposed model for violent activity detection
+# This is the proposed model for violent activity detection
+
 def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, weight_decay = 1e-5, frame_diff_interval = 1, mode = "both", cnn_dropout = 0.2, lstm_dropout = 0.2, dense_dropout = 0.3, seed = 42):
     """parameters:
     size = height/width of each frame,
