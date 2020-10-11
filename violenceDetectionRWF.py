@@ -26,7 +26,7 @@ import pandas as pd
 
 #-----------------------------------
 
-model_to_train = "convlstm" # [ "proposed", "convlstm", "biconvlstm"]
+model_to_train = "proposed" # [ "proposed", "convlstm", "biconvlstm"]
 mode = "both" # ["both","only_frames","only_differneces"]
 initial_learning_rate = 4e-04
 if model_to_train == "biconvlstm":
@@ -52,7 +52,7 @@ if model_to_train == "convlstm" or model_to_train == "biconvlstm":
 
 preprocess_data = False
 
-create_new_model = True
+create_new_model = False
 
 currentModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_currentModel.h5'
@@ -85,7 +85,7 @@ train_generator = DataGenerator(directory='{}/processed/train'.format(dataset),
                                 batch_size=batch_size,
                                 data_augmentation=True,
                                 shuffle=True,
-                                one_hot=True,
+                                one_hot=one_hot,
                                 sample=False,
                                 resize=input_frame_size,
                                 target_frames = vid_len,
@@ -97,7 +97,7 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                batch_size=batch_size,
                                data_augmentation=False,
                                shuffle=True,
-                               one_hot=True,
+                               one_hot=one_hot,
                                sample=False,
                                resize=input_frame_size,
                                target_frames = vid_len,
@@ -123,8 +123,13 @@ if create_new_model:
     print('> new model created')
 else:
     print('> getting the model from...', currentModelPath)
-    model = load_model(currentModelPath, custom_objects={
-                      'SepConvLSTM2D': SepConvLSTM2D})
+    
+    if model_to_train == "proposed":
+        model = load_model(currentModelPath, custom_objects={
+                        'SepConvLSTM2D': SepConvLSTM2D})
+    else:
+        model = load_model(currentModelPath)
+        
     if learning_rate is not None:
         K.set_value(model.optimizer.lr, learning_rate)  
 
