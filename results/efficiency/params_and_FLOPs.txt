@@ -1,0 +1,48 @@
+============================
+model type: proposed
+batch size: 4
+input mode: both
+----------------------------
+number of parameters: 444737
+FLOPs: 2436284
+----------------------------
+number of parameters: 0.444737 million
+FLOPs: 2.436284 million
+============================
+
+============================
+model type: proposed
+batch size: 4
+input mode: only_frames
+----------------------------
+number of parameters: 223473
+FLOPs: 1220208
+----------------------------
+number of parameters: 0.223473 million
+FLOPs: 1.220208 million
+============================
+
+============================
+model type: convlstm
+batch size: 4
+input mode: only_differences
+----------------------------
+number of parameters: 9757160
+FLOPs: 38160315
+----------------------------
+number of parameters: 9.75716 million
+FLOPs: 38.160315 million
+============================
+
+============================
+model type: biconvlstm
+batch size: 2
+input mode: only_differences
+----------------------------
+number of parameters: 48910664
+FLOPs: 145065014
+----------------------------
+number of parameters: 48.910664 million
+FLOPs: 145.065014 million
+============================
+

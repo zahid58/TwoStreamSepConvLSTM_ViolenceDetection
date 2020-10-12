@@ -7,6 +7,7 @@ seed(42)
 rseed(42)
 set_seed(42)
 import random
+import tensorflow as tf
 from customLayers import SepConvLSTM2D
 import pickle
 import shutil
@@ -22,7 +23,7 @@ from tensorflow.keras.optimizers import RMSprop, Adam
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback, ModelCheckpoint,LearningRateScheduler
 from tensorflow.python.keras import backend as K
 import pandas as pd
-
+import datetime
 
 #-----------------------------------
 
@@ -152,10 +153,14 @@ modelcheckpointVal = ModelCheckpoint(
 historySavePath = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'
 save_training_history = SaveTrainingCurves(save_path = historySavePath)
 
+logdir = os.path.join(model_type + "_logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+tensorboard_callback = tf.keras.callbacks.TensorBoard(logdir, histogram_freq=1, profile_batch = '50,150')
+
 callback_list = [
                 modelcheckpoint,
                 modelcheckpointVal,
-                save_training_history
+                save_training_history,
+                tensorboard_callback
                 ]
 if model_type == "proposed":
     callback_list.append(LearningRateScheduler(lr_scheduler, verbose = 0))
@@ -178,20 +183,3 @@ history = model.fit(
 #---------------------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
-    # freezing/unfreezing the CNN
-    # for layer in model.layers[1].layer.layers: 
-    #    layer.trainable = cnn_trainable 
-
-    # recompiling the model          
-    # model.compile(optimizer=model.optimizer, loss='binary_crossentropy', metrics=['acc'])
-    # print('> Dropout on FC layer : ', model.layers[-2].rate)
