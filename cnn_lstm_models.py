@@ -141,7 +141,7 @@ def getBiConvLSTM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable =
 
 # This is the proposed model for violent activity detection
 
-def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, weight_decay = 1e-5, frame_diff_interval = 1, mode = "both", cnn_dropout = 0.2, lstm_dropout = 0.2, dense_dropout = 0.3, seed = 42):
+def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainable = True, lstm_type = 'sepconv',weight_decay = 1e-5, frame_diff_interval = 1, mode = "both", cnn_dropout = 0.2, lstm_dropout = 0.2, dense_dropout = 0.3, seed = 42):
     """parameters:
     size = height/width of each frame,
     seq_len = number of frames in each sequence,
@@ -176,8 +176,12 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         frames_cnn = TimeDistributed( frames_cnn,name='frames_CNN' )( frames_input )
         frames_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_1_' )( frames_cnn)
         frames_cnn = TimeDistributed( Dropout(cnn_dropout, seed=seed) ,name='dropout_1_' )(frames_cnn)
-
-        frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
+        if lstm_type == 'sepconv':
+            frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
+        elif lstm_type == 'conv':
+            frames_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
+        else:
+            raise Exception("LSTM type not recognized!")   
         frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
         
     if differences:
@@ -192,8 +196,12 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         frames_diff_cnn = TimeDistributed( frames_diff_cnn,name='frames_diff_CNN' )(frames_diff_input)
         frames_diff_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_2_' )(frames_diff_cnn)
         frames_diff_cnn = TimeDistributed( Dropout(cnn_dropout, seed=seed) ,name='dropout_2_' )(frames_diff_cnn)
-
-        frames_diff_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
+        if lstm_type == 'sepconv':
+            frames_diff_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
+        elif lstm_type == 'conv':    
+            frames_diff_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
+        else:
+            raise Exception("LSTM type not recognized!")
         frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
 
 

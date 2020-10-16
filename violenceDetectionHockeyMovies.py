@@ -73,6 +73,8 @@ if preprocess_data:
     os.mkdir(os.path.join(dataset,'processed'))
     convert_dataset_to_npy(src='{}/videos'.format(dataset),dest='{}/processed'.format(dataset), crop_x_y=crop_dark[dataset], target_frames=vid_len, frame_size= dataset_frame_size )
 
+
+
 train_generator = DataGenerator(directory='{}/processed/train'.format(dataset), 
                                     batch_size=batch_size, 
                                     data_augmentation=True,

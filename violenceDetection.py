@@ -34,7 +34,7 @@ if model_type == "biconvlstm":
 elif model_type == "convlstm":
     initial_learning_rate = 1e-05   
 
-dataset = 'rwf2000' # surv
+dataset = 'surv' # surv
 dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies', 'surv':'surv_dataset'}
 
 crop_dark = {
