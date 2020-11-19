@@ -7,10 +7,9 @@ seed(42)
 rseed(42)
 set_seed(42)
 import random
-from customLayers import SepConvLSTM2D
+from sep_conv_rnn import SepConvLSTM2D
 import pickle
 import shutil
-import sepConvLstmNet
 import cnn_lstm_models
 import rwfRGBonly
 from utils import *
@@ -28,14 +27,30 @@ import pandas as pd
 
 model_type = "proposed" # [ "proposed", "convlstm", "biconvlstm"]
 mode = "both" # ["both","only_frames","only_differneces"]
-initial_learning_rate = 4e-04
-if model_type == "biconvlstm":
+
+dataset = 'rwf2000' # surv
+dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies', 'surv':'surv_dataset'}
+
+if model_type == "proposed":
+    if dataset == "rwf2000":
+        initial_learning_rate = 4e-04
+    else:
+        initial_learning_rate = 1e-06
+elif model_type == "biconvlstm":
     initial_learning_rate = 1e-06
 elif model_type == "convlstm":
     initial_learning_rate = 1e-05   
 
-dataset = 'surv' # surv
-dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies', 'surv':'surv_dataset'}
+batch_size = 4
+if model_type == "biconvlstm":
+    batch_size = 2
+vid_len = 32  # 32
+dataset_frame_size = 320
+input_frame_size = 224
+frame_diff_interval = 1
+if model_type == "convlstm" or model_type == "biconvlstm":
+    mode = "only_differences"  
+lstm_type = 'sepconv' # conv
 
 crop_dark = {
     'hockey' : (16,45),
@@ -44,34 +59,28 @@ crop_dark = {
     'surv': (0,0)
 }
 
-batch_size = 4
-if model_type == "biconvlstm":
-    batch_size = 2
-vid_len = 10   # 32
-dataset_frame_size = 320
-input_frame_size = 224
-frame_diff_interval = 1
-if model_type == "convlstm" or model_type == "biconvlstm":
-    mode = "only_differences"  
-lstm_type = 'sepconv' # conv
 
 #---------------------------------------------------
 
-preprocess_data = True
+epochs = 50
+
+preprocess_data = False
 
 create_new_model = True
 
 currentModelPath = '/gdrive/My Drive/THESIS/Data/' + \
-    str(dataset) + '_currentModel.h5'
+    str(dataset) + '_currentModel'
 
 bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
-    str(dataset) + '_best_val_acc_Model.h5'   
+    str(dataset) + '_best_val_acc_Model'   
 
-epochs = 50
+rwfPretrainedPath = 'NOT_SET'
 
 learning_rate = None   
 
-cnn_trainable = True
+cnn_trainable = True  #
+
+yolo_trainable = False  #
 
 loss = 'categorical_crossentropy'
 
@@ -131,29 +140,31 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
 print('> cnn_trainable : ',cnn_trainable)
 if create_new_model:
     print('> creating new model...', model_type)
-    
     if model_type == "proposed":
-        model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
+        model = cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, yolo_trainable = yolo_trainable, frame_diff_interval = frame_diff_interval, mode="all", lstm_type=lstm_type)
+        if dataset == "hockey" or dataset == "movies" or dataset == "surv":
+            print('> loading weights pretrained on rwf dataset from', rwfPretrainedPath)
+            model.load_weights(rwfPretrainedPath)
     elif model_type == "convlstm":
-        model =  cnn_lstm_models.getConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode = mode)
+        model =  cnn_lstm_models.getConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode = mode)    
     elif model_type == "biconvlstm":
         model =  cnn_lstm_models.getBiConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode = mode)
+    
     optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
-
     model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
     print('> new model created')
-else:
-    print('> getting the model from...', currentModelPath)
     
+else:
+    print('> getting the model from...', currentModelPath)  
     if model_type == "proposed":
-        if lstm_type == "sepconv":
-            model = load_model(currentModelPath, custom_objects={
-                            'SepConvLSTM2D': SepConvLSTM2D})
-        else:
-            model = load_model(currentModelPath)    
+        model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, yolo_trainable = yolo_trainable, frame_diff_interval = frame_diff_interval, mode="all", lstm_type=lstm_type)
+        model = load_model(currentModelPath, custom_objects = {'SepConvLSTM2D':SepConvLSTM2D})
+        #model.trainable = True
+        #model.set_weights(weights)
+
+
     else:
         model = load_model(currentModelPath)
-        
     if learning_rate is not None:
         K.set_value(model.optimizer.lr, learning_rate)  
 
@@ -164,6 +175,7 @@ print('> Optimizer : ', model.optimizer.get_config())
 dot_img_file = 'model_architecture.png'
 print('> plotting the model architecture and saving at ', dot_img_file)
 plot_model(model, to_file=dot_img_file, show_shapes=True)
+
 
 #--------------------------------------------------
 
@@ -200,22 +212,3 @@ history = model.fit(
 )
 
 #---------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-    # freezing/unfreezing the CNN
-    # for layer in model.layers[1].layer.layers: 
-    #    layer.trainable = cnn_trainable 
-
-    # recompiling the model          
-    # model.compile(optimizer=model.optimizer, loss='binary_crossentropy', metrics=['acc'])
-    # print('> Dropout on FC layer : ', model.layers[-2].rate)

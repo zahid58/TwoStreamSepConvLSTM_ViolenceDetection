@@ -4,7 +4,7 @@ import shutil
 import numpy as np 
 import pickle
 from tensorflow.keras.callbacks import Callback as CB
-
+import os
 
 class SaveTrainingCurves(CB):
 
@@ -12,7 +12,9 @@ class SaveTrainingCurves(CB):
         super(SaveTrainingCurves,self).__init__(**kargs)
 
         self.save_path = save_path
-        self.split_num = split_num        
+        self.split_num = split_num    
+        if not os.path.exists(self.save_path):
+            os.mkdir(self.save_path)    
         historyInDrivePath = self.save_path + 'split_'+ str(self.split_num) + '_history.csv'
 
         history = None

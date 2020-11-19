@@ -289,7 +289,7 @@ class DataGenerator(Sequence):
         if s > prob:
             return self.resize_frames(video)
         # gives back a randomly cropped 224 X 224 from a video with frames 320 x 320
-        if self.dataset == 'rwf2000':
+        if self.dataset == 'rwf2000' or self.dataset == 'surv':
             x = np.random.choice(
                 a=np.arange(112, 320-112), replace=True)
             y = np.random.choice(
@@ -399,7 +399,7 @@ class DataGenerator(Sequence):
                 data = self.pepper(data,prob=0.3,ratio=45)
                 data = self.salt(data,prob=0.3,ratio=45)
         else:
-            if self.dataset == 'rwf2000':
+            if self.dataset == 'rwf2000' or self.dataset == 'surv':
                 data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)  # center cropping only for test generators
             if differences:
                 diff_data = self.frame_difference(data)

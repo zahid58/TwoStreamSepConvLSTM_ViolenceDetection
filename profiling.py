@@ -49,11 +49,14 @@ frame_diff_interval = 1
 if model_type == "convlstm" or model_type == "biconvlstm":
     mode = "only_differences"  
 
+lstm_type = 'sepconv' # conv
+
+
 #---------------------------------------------------
 
 preprocess_data = False
 
-create_new_model = False
+create_new_model = True
 
 currentModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_currentModel.h5'
@@ -61,7 +64,7 @@ currentModelPath = '/gdrive/My Drive/THESIS/Data/' + \
 bestValPath =  '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_best_val_acc_Model.h5'   
 
-epochs = 50
+epochs = 1
 
 learning_rate = None   
 
@@ -113,7 +116,7 @@ if create_new_model:
     print('> creating new model...', model_type)
     
     if model_type == "proposed":
-        model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode)
+        model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
     elif model_type == "convlstm":
         model =  cnn_lstm_models.getConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode = mode)
     elif model_type == "biconvlstm":
@@ -153,7 +156,7 @@ modelcheckpointVal = ModelCheckpoint(
 historySavePath = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'
 save_training_history = SaveTrainingCurves(save_path = historySavePath)
 
-logdir = os.path.join(model_type + "_logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+logdir = os.path.join(model_type +"_" + mode + "_" + lstm_type + "_logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 tensorboard_callback = tf.keras.callbacks.TensorBoard(logdir, histogram_freq=1, profile_batch = '50,150')
 
 callback_list = [

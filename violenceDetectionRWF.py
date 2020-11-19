@@ -7,10 +7,9 @@ seed(42)
 rseed(42)
 set_seed(42)
 import random
-from customLayers import SepConvLSTM2D
+from sep_conv_rnn import SepConvLSTM2D
 import pickle
 import shutil
-import sepConvLstmNet
 import cnn_lstm_models
 import rwfRGBonly
 from utils import *
