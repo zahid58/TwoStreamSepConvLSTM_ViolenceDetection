@@ -86,6 +86,15 @@ def Darknet_Depthwise_Separable_Conv2D_BN_Leaky(filters, kernel_size=(3, 3), blo
         CustomBatchNormalization(name='conv_pw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_pw_%s_leaky_relu' % block_id_str))
 
+def Depthwise_Conv2D_BN_Leaky(kernel_size=(3, 3), block_id_str=None):
+    """Depthwise Convolution2D."""
+    if not block_id_str:
+        block_id_str = str(K.get_uid())
+    return compose(
+        YoloDepthwiseConv2D(kernel_size, padding='same', name='conv_dw_' + block_id_str),
+        CustomBatchNormalization(name='conv_dw_%s_bn' % block_id_str),
+        LeakyReLU(alpha=0.1, name='conv_dw_%s_leaky_relu' % block_id_str)
+        )
 
 def Depthwise_Separable_Conv2D_BN_Leaky(filters, kernel_size=(3, 3), block_id_str=None):
     """Depthwise Separable Convolution2D."""
@@ -227,6 +236,37 @@ def tiny_yolo3_predictions(feature_maps, feature_channel_nums, num_anchors, num_
             DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2'))([x2, f2])
 
     return y1, y2
+
+
+def tiny_yolo3_ultralite_predictions(feature_maps, feature_channel_nums, num_anchors, num_classes):
+    f1, f2 = feature_maps
+    f1_channel_num, f2_channel_num = feature_channel_nums
+
+    #feature map 1 transform
+    #x1 = DarknetConv2D_BN_Leaky(f1_channel_num//2, (1,1))(f1)
+    x1 = f1
+
+    #feature map 1 output (13x13 for 416 input)
+    y1 = compose(
+            #DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
+            Depthwise_Conv2D_BN_Leaky(kernel_size=(3, 3), block_id_str='pred_1'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1'))(x1)
+
+    #upsample fpn merge for feature map 1 & 2
+    x2 = compose(
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x1)
+
+    #feature map 2 output (26x26 for 416 input)
+    y2 = compose(
+            Concatenate(),
+            #DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
+            Depthwise_Conv2D_BN_Leaky(kernel_size=(3, 3), block_id_str='pred_2'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2'))([x2, f2])
+
+    return y1, y2
+
+
 
 
 def tiny_yolo3lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_classes):

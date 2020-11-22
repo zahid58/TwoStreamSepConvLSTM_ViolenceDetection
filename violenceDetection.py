@@ -66,7 +66,7 @@ epochs = 50
 
 preprocess_data = False
 
-create_new_model = True
+create_new_model = False
 
 currentModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_currentModel'
@@ -158,13 +158,11 @@ else:
     print('> getting the model from...', currentModelPath)  
     if model_type == "proposed":
         model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, yolo_trainable = yolo_trainable, frame_diff_interval = frame_diff_interval, mode="all", lstm_type=lstm_type)
-        model = load_model(currentModelPath, custom_objects = {'SepConvLSTM2D':SepConvLSTM2D})
+        model.load_weights(currentModelPath)
         #model.trainable = True
-        #model.set_weights(weights)
-
-
     else:
-        model = load_model(currentModelPath)
+        raise Exception("NOT DEFINED WHAT TO DO!")
+        #model = load_model(currentModelPath)
     if learning_rate is not None:
         K.set_value(model.optimizer.lr, learning_rate)  
 
@@ -180,10 +178,10 @@ plot_model(model, to_file=dot_img_file, show_shapes=True)
 #--------------------------------------------------
 
 modelcheckpoint = ModelCheckpoint(
-    currentModelPath, monitor='loss', verbose=0, save_best_only=False, mode='auto', save_freq='epoch')
+    currentModelPath, monitor='loss', verbose=0, save_best_only=False, save_weights_only = True, mode='auto', save_freq='epoch')
     
 modelcheckpointVal = ModelCheckpoint(
-    bestValPath, monitor='val_acc', verbose=0, save_best_only=True, mode='auto', save_freq='epoch')
+    bestValPath, monitor='val_acc', verbose=0, save_best_only=True, save_weights_only = True, mode='auto', save_freq='epoch')
 
 historySavePath = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'
 save_training_history = SaveTrainingCurves(save_path = historySavePath)
@@ -193,6 +191,7 @@ callback_list = [
                 modelcheckpointVal,
                 save_training_history
                 ]
+                
 if model_type == "proposed":
     callback_list.append(LearningRateScheduler(lr_scheduler, verbose = 0))
                 
