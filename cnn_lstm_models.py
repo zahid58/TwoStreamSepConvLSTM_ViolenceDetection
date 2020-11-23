@@ -1,3 +1,4 @@
+
 from tensorflow.keras import backend as K
 from tensorflow.keras import Input
 from tensorflow.keras.callbacks import Callback
@@ -257,15 +258,19 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
     if mode == "all":
         frames = True
         differences = True
+        yolo = True
     elif mode == "only_frames":
         frames = True
         differences = False
+        yolo = True
     elif mode == "only_differences":
         frames = False
         differences = True
+        yolo = False
     elif mode == "only_yolo":
         frames = False
         differences = False
+        yolo = True
     else:
         raise Exception("mode not recognized!")
 
@@ -281,24 +286,8 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         frames_cnn = TimeDistributed( frames_cnn,name='frames_CNN' )( frames_input )
         frames_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_1_' )( frames_cnn)
         frames_cnn = TimeDistributed( Dropout(cnn_dropout, seed=seed) ,name='dropout_1_' )(frames_cnn)
-
-        yolo_input = frames_input; yolo_input_shape = (size, size, 3)
-        yolo_weights_path = "/gdrive/My Drive/THESIS/Data/YOLO_MODELS/latest_tiny_yolo3_mobilenetv3small_ultralite_train_model.h5"
-        YOLO = get_yolo3_model("tiny_yolo3_mobilenetv3small_ultralite", yolo_input_shape, yolo_weights_path)
-        for layer in YOLO.layers:
-            layer.trainable = yolo_trainable
-        
-        yolo_outputs = []
-        for i,out in enumerate(YOLO.output):
-            yolo_outputs.append(TimeDistributed(Model(YOLO.input, out) ,name="YOLO_"+str(i)+"_")(yolo_input))
-        y1,y2 = yolo_outputs[0], yolo_outputs[1]
-
-        y1 = TimeDistributed( Conv2D(filters=18,kernel_size=(3,3),strides=(1,1),padding='same', kernel_regularizer = l2(weight_decay)), name="conv_yolo1")(y1)
-        y2 = TimeDistributed( Conv2D(filters=18,kernel_size=(3,3),strides=(2,2),padding='same', kernel_regularizer = l2(weight_decay)), name="conv_yolo2")(y2)
-        frames_n_yolo_output = Concatenate(axis=-1, name='concatenate_yolo')([y1, y2, frames_cnn])
-
         if lstm_type == 'sepconv':
-            frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_n_yolo_output)
+            frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
         elif lstm_type == 'conv':
             frames_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
         else:
@@ -324,14 +313,42 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         else:
             raise Exception("LSTM type not recognized!")
         frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
+
+    if yolo:
+
+        yolo_input = frames_input; yolo_input_shape = (size, size, 3)
+        yolo_weights_path = "/gdrive/My Drive/THESIS/Data/YOLO_MODELS/latest_tiny_yolo3_mobilenetv3small_ultralite_train_model.h5"
+        YOLO = get_yolo3_model("tiny_yolo3_mobilenetv3_small", yolo_input_shape, yolo_weights_path)
+        for layer in YOLO.layers:
+            layer.trainable = yolo_trainable
         
+        yolo_outputs = []
+        for i,out in enumerate(YOLO.output):
+            yolo_outputs.append(TimeDistributed(Model(YOLO.input, out) ,name="YOLO_"+str(i)+"_")(yolo_input))
+        y1,y2 = yolo_outputs[0], yolo_outputs[1]
+
+        y1 = TimeDistributed( Conv2D(filters=18,kernel_size=(3,3),strides=(1,1),padding='same', kernel_regularizer = l2(weight_decay)), name="conv_yolo1")(y1)
+        y2 = TimeDistributed( Conv2D(filters=18,kernel_size=(3,3),strides=(2,2),padding='same', kernel_regularizer = l2(weight_decay)), name="conv_yolo2")(y2)
+        yolo_output = Concatenate(axis=-1, name='concatenate_yolo')([y1, y2])
+
+        if lstm_type == 'sepconv':
+            yolo_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_3', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(yolo_output)
+        elif lstm_type == 'conv':    
+            yolo_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_3', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(yolo_output)
+        else:
+            raise Exception("LSTM type not recognized!")
+        yolo_lstm = BatchNormalization( axis = -1 )(yolo_lstm)              
+
+
 
     if mode == "all":
-        lstm = Concatenate(axis=-1, name='concatenate_')([frames_lstm, frames_diff_lstm])
+        lstm = Concatenate(axis=-1, name='concatenate_')([frames_lstm, frames_diff_lstm, yolo_lstm])
     elif mode == "only_frames":
         lstm = frames_lstm
     elif mode == "only_differences":
         lstm = frames_diff_lstm
+    elif mode == "only_yolo":
+        lstm = yolo_lstm
 
     lstm = MaxPooling2D((2,2) , name = 'max_pooling_')(lstm)
     
@@ -355,5 +372,3 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         model = Model(inputs=yolo_input, outputs=predictions)
 
     return model
-
-
