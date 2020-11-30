@@ -2,13 +2,14 @@
 from tensorflow.keras import backend as K
 from tensorflow.keras import Input
 from tensorflow.keras.callbacks import Callback
-from tensorflow.keras.layers import Dense, Flatten, Dropout, ZeroPadding3D, ConvLSTM2D, Reshape, BatchNormalization, Activation, Conv2D
+from tensorflow.keras.layers import Dense, Flatten, Dropout, ZeroPadding3D, ConvLSTM2D, Reshape, BatchNormalization, Activation, Conv2D, LayerNormalization
 from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import TimeDistributed
+from tensorflow.keras.layers import TimeDistributed, RepeatVector,Permute, Multiply
 from tensorflow.keras.applications import MobileNetV2, VGG16
 from tensorflow.keras.layers import ELU, ReLU, LeakyReLU, Lambda, Dense, Bidirectional, Conv3D, GlobalAveragePooling2D, Multiply, MaxPooling3D, MaxPooling2D, Concatenate, Add, AveragePooling2D 
 from tensorflow.keras.initializers import glorot_uniform, he_normal
 from tensorflow.keras.models import Model
+from tensorflow.keras.backend import expand_dims
 from tensorflow.keras.regularizers import l2
 from tensorflow.python.keras import backend as K
 from sep_conv_rnn import SepConvLSTM2D
@@ -249,109 +250,122 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
     model
     """
     print('cnn_trainable:',cnn_trainable)
-    print('yolo_trainable:',yolo_trainable)
     print('-----------------------------')
     print('cnn dropout : ', cnn_dropout)
     print('dense dropout : ', dense_dropout)
     print('lstm dropout :', lstm_dropout)
 
-    if mode == "all":
-        frames = True
-        differences = True
-        yolo = True
-    elif mode == "only_frames":
-        frames = True
-        differences = False
-        yolo = True
-    elif mode == "only_differences":
-        frames = False
-        differences = True
-        yolo = False
-    elif mode == "only_yolo":
-        frames = False
-        differences = False
-        yolo = True
-    else:
-        raise Exception("mode not recognized!")
+    frames = True
+    differences = True
 
     if frames:
 
         frames_input = Input(shape=(seq_len, size, size, 3),name='frames_input')
-        frames_cnn = MobileNetV2( input_shape = (size,size,3), alpha=0.35, weights='imagenet', include_top = False)
-        frames_cnn = Model( inputs=[frames_cnn.layers[0].input],outputs=[frames_cnn.layers[-30].output] ) # taking only upto block 13
+        frames_cnn = MobileNetV2( input_shape=(size,size,3), alpha=0.35, weights='imagenet', include_top = False)
+        frames_cnn = Model( inputs = [frames_cnn.layers[0].input], outputs = [frames_cnn.layers[-30].output] ) # taking only upto block 13
         
-        for layer in frames_cnn.layers:
-            layer.trainable = cnn_trainable
+        frames_cnn.trainable = cnn_trainable
 
-        frames_cnn = TimeDistributed( frames_cnn,name='frames_CNN' )( frames_input )
-        frames_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_1_' )( frames_cnn)
+        frames_cnn = TimeDistributed( frames_cnn,name='frames_CNN' )(frames_input, training = False)
+        frames_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_1_' )(frames_cnn)
         frames_cnn = TimeDistributed( Dropout(cnn_dropout, seed=seed) ,name='dropout_1_' )(frames_cnn)
+        frames_cnn = LayerNormalization( axis = -1 )(frames_cnn)
+
         if lstm_type == 'sepconv':
-            frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
-        elif lstm_type == 'conv':
-            frames_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
+            frames_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
+        elif lstm_type == 'conv':    
+            frames_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
         else:
-            raise Exception("LSTM type not recognized!")   
-        frames_lstm = BatchNormalization( axis = -1 )(frames_lstm)
-        
+            raise Exception("LSTM type not recognized!")
+        frames_lstm = LayerNormalization( axis = -1 )(frames_lstm)
+
+        frames_cnn_flattened = TimeDistributed(Flatten())(frames_cnn)
+        frames_lstm_flattened  = TimeDistributed(Flatten())(frames_lstm)
+        frames_flattened = Concatenate(axis=-1)([frames_cnn_flattened, frames_lstm_flattened])
+        # print("shape0:", frames_lstm_flattened.shape)
+        frames_attention = Dense(8, activation='tanh')(frames_flattened)
+        frames_attention = Dense(1, activation='tanh')(frames_attention)
+        # print("shape1:", frames_attention.shape)
+        frames_attention = Flatten()(frames_attention)
+        # print("shape2:", frames_attention.shape)
+        frames_attention = Activation('softmax')(frames_attention)
+        # print("shape3:", frames_attention.shape)
+        frames_attention = RepeatVector(7*7*64)(frames_attention)
+        # print("shape4:", frames_attention.shape)
+        frames_attention = Permute([2, 1])(frames_attention)
+        # print("shape5:", frames_attention.shape)
+        frames_attention = TimeDistributed(Reshape( (7,7,64) ))(frames_attention)
+        # print("shape6:", frames_attention.shape)
+        frames_lstm = Multiply()([frames_lstm, frames_attention])
+        frames_lstm = Lambda(lambda xin: K.sum(xin, axis=1), output_shape=(None,7,7,64))(frames_lstm)
+
     if differences:
 
         frames_diff_input = Input(shape=(seq_len - frame_diff_interval, size, size, 3),name='frames_diff_input')
         frames_diff_cnn = MobileNetV2( input_shape=(size,size,3), alpha=0.35, weights='imagenet', include_top = False)
         frames_diff_cnn = Model( inputs = [frames_diff_cnn.layers[0].input], outputs = [frames_diff_cnn.layers[-30].output] ) # taking only upto block 13
-    
-        for layer in frames_diff_cnn.layers:
-            layer.trainable = cnn_trainable
-    
-        frames_diff_cnn = TimeDistributed( frames_diff_cnn,name='frames_diff_CNN' )(frames_diff_input)
+        
+        frames_diff_cnn.trainable = cnn_trainable
+        
+        frames_diff_cnn = TimeDistributed( frames_diff_cnn,name='frames_diff_CNN' )(frames_diff_input, training = False)
         frames_diff_cnn = TimeDistributed( LeakyReLU(alpha=0.1), name='leaky_relu_2_' )(frames_diff_cnn)
         frames_diff_cnn = TimeDistributed( Dropout(cnn_dropout, seed=seed) ,name='dropout_2_' )(frames_diff_cnn)
-        if lstm_type == 'sepconv':
-            frames_diff_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
-        elif lstm_type == 'conv':    
-            frames_diff_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
-        else:
-            raise Exception("LSTM type not recognized!")
-        frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
-
-    if yolo:
-
-        yolo_input = frames_input; yolo_input_shape = (size, size, 3)
-        yolo_weights_path = "/gdrive/My Drive/THESIS/Data/YOLO_MODELS/latest_tiny_yolo3_mobilenetv3small_ultralite_train_model.h5"
-        YOLO = get_yolo3_model("tiny_yolo3_mobilenetv3_small", yolo_input_shape, yolo_weights_path)
-        for layer in YOLO.layers:
-            layer.trainable = yolo_trainable
-        
-        yolo_outputs = []
-        for i,out in enumerate(YOLO.output):
-            yolo_outputs.append(TimeDistributed(Model(YOLO.input, out) ,name="YOLO_"+str(i)+"_")(yolo_input))
-        y1,y2 = yolo_outputs[0], yolo_outputs[1]
-
-        y1 = TimeDistributed( Conv2D(filters=18,kernel_size=(3,3),strides=(1,1),padding='same', kernel_regularizer = l2(weight_decay)), name="conv_yolo1")(y1)
-        y2 = TimeDistributed( Conv2D(filters=18,kernel_size=(3,3),strides=(2,2),padding='same', kernel_regularizer = l2(weight_decay)), name="conv_yolo2")(y2)
-        yolo_output = Concatenate(axis=-1, name='concatenate_yolo')([y1, y2])
+        frames_diff_cnn = LayerNormalization( axis = -1 )(frames_diff_cnn)
 
         if lstm_type == 'sepconv':
-            yolo_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_3', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(yolo_output)
+            frames_diff_lstm = SepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='SepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
         elif lstm_type == 'conv':    
-            yolo_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_3', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(yolo_output)
+            frames_diff_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=True, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
         else:
             raise Exception("LSTM type not recognized!")
-        yolo_lstm = BatchNormalization( axis = -1 )(yolo_lstm)              
+        frames_diff_lstm = LayerNormalization( axis = -1 )(frames_diff_lstm)
 
+        frames_diff_cnn_flattened = TimeDistributed(Flatten())(frames_diff_cnn)
+        frames_diff_lstm_flattened  = TimeDistributed(Flatten())(frames_diff_lstm)
+        frames_diff_flattened = Concatenate(axis=-1)([frames_diff_cnn_flattened, frames_diff_lstm_flattened])
+        # print("shape0:", frames_lstm_flattened.shape)
+        frames_diff_attention = Dense(8, activation='tanh')(frames_diff_flattened)
+        frames_diff_attention = Dense(1, activation='tanh')(frames_diff_attention)
+        # print("shape1:", frames_diff_attention.shape)
+        frames_diff_attention = Flatten()(frames_diff_attention)
+        # print("shape2:", frames_diff_attention.shape)
+        frames_diff_attention = Activation('softmax')(frames_diff_attention)
+        # print("shape3:", frames_diff_attention.shape)
+        frames_diff_attention = RepeatVector(7*7*64)(frames_diff_attention)
+        # print("shape4:", frames_diff_attention.shape)
+        frames_diff_attention = Permute([2, 1])(frames_diff_attention)
+        # print("shape5:", frames_diff_attention.shape)
+        frames_diff_attention = TimeDistributed(Reshape( (7,7,64) ))(frames_diff_attention)
+        # print("shape6:", frames_diff_attention.shape)
+        frames_diff_lstm = Multiply()([frames_diff_lstm, frames_diff_attention])
+        frames_diff_lstm = Lambda(lambda xin: K.sum(xin, axis=1), output_shape=(7,7,64))(frames_diff_lstm)
 
+    frames_lstm = expand_dims(frames_lstm, axis=1)
+    # print("shape_a:",frames_lstm.shape)
+    frames_diff_lstm = expand_dims(frames_diff_lstm, axis=1)
+    # print("shape_b:",frames_diff_lstm.shape)
+    lstm = Concatenate(axis=1)([frames_lstm , frames_diff_lstm])
 
-    if mode == "all":
-        lstm = Concatenate(axis=-1, name='concatenate_')([frames_lstm, frames_diff_lstm, yolo_lstm])
-    elif mode == "only_frames":
-        lstm = frames_lstm
-    elif mode == "only_differences":
-        lstm = frames_diff_lstm
-    elif mode == "only_yolo":
-        lstm = yolo_lstm
-
-    lstm = MaxPooling2D((2,2) , name = 'max_pooling_')(lstm)
+    lstm_flattened  = TimeDistributed(Flatten())(lstm)
+    # print("shape0:", lstm_flattened.shape)
+    attention = Dense(8, activation='tanh')(lstm_flattened)
+    attention = Dense(1, activation='tanh')(attention)
+    # print("shape1:", attention.shape)
+    attention = Flatten()(attention)
+    # print("shape2:", attention.shape)
+    attention = Activation('softmax')(attention)
+    # print("shape3:", attention.shape)
+    attention = RepeatVector(7*7*64)(attention)
+    # print("shape4:", attention.shape)
+    attention = Permute([2, 1])(attention)
+    # print("shape5:", attention.shape)
+    attention = TimeDistributed(Reshape( (7,7,64) ))(attention)
+    # print("shape6:", attention.shape)
+    lstm = Multiply()([lstm, attention])
+    lstm = Lambda(lambda xin: K.sum(xin, axis=1), output_shape=(7,7,64))(lstm)
+    lstm = LayerNormalization(axis=-1)(lstm)
     
+    lstm = MaxPooling2D((2,2))(lstm)
     x = Flatten()(lstm) 
   
     x = Dense(128)(x)
@@ -368,7 +382,5 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         model = Model(inputs=frames_input, outputs=predictions)
     elif mode == "only_differences":
         model = Model(inputs=frames_diff_input, outputs=predictions)
-    elif mode == "only_yolo":
-        model = Model(inputs=yolo_input, outputs=predictions)
 
     return model

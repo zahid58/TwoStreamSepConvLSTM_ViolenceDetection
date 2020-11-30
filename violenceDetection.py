@@ -33,7 +33,7 @@ dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies
 
 if model_type == "proposed":
     if dataset == "rwf2000":
-        initial_learning_rate = 4e-04
+        initial_learning_rate = 2e-04
     else:
         initial_learning_rate = 1e-06
 elif model_type == "biconvlstm":
@@ -62,11 +62,11 @@ crop_dark = {
 
 #---------------------------------------------------
 
-epochs = 50
+epochs = 20
 
 preprocess_data = False
 
-create_new_model = False
+create_new_model = True
 
 currentModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_currentModel'
@@ -78,7 +78,7 @@ rwfPretrainedPath = 'NOT_SET'
 
 learning_rate = None   
 
-cnn_trainable = True  #
+cnn_trainable = False  #
 
 yolo_trainable = False  #
 
@@ -158,13 +158,14 @@ else:
     print('> getting the model from...', currentModelPath)  
     if model_type == "proposed":
         model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, yolo_trainable = yolo_trainable, frame_diff_interval = frame_diff_interval, mode="all", lstm_type=lstm_type)
+        optimizer = Adam(lr=1e-05, amsgrad=True)
+        model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
         model.load_weights(currentModelPath)
-        #model.trainable = True
     else:
         raise Exception("NOT DEFINED WHAT TO DO!")
         #model = load_model(currentModelPath)
-    if learning_rate is not None:
-        K.set_value(model.optimizer.lr, learning_rate)  
+    # if learning_rate is not None:
+    #     K.set_value(model.optimizer.lr, learning_rate)  
 
 print('> Summary of the model : ')
 model.summary(line_length=140)
