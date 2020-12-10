@@ -19,7 +19,7 @@ class DataGenerator(Sequence):
         If you want to load file with other data format, please fix the method of "load_data" as you want
     """
 
-    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=False, resize=224, frame_diff_interval=1, dataset=None, mode="both"): 
+    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=False, normalize_ = True, resize=224, frame_diff_interval=1, dataset=None, mode="both"): 
         # Initialize the params
         self.dataset = dataset
         self.batch_size = batch_size
@@ -32,6 +32,7 @@ class DataGenerator(Sequence):
         self.mode = mode  #["only_frames","only_differences", "both"]
         self.resize = resize
         self.frame_diff_interval = frame_diff_interval
+        self.normalize_ = normalize_
         # Load all the save_path of files, and create a dictionary that save the pair of "data:label"
         self.X_path, self.Y_dict = self.search_data()
         # Print basic statistics information
@@ -305,6 +306,24 @@ class DataGenerator(Sequence):
         # get cropped video
         return video 
 
+    def avg_back_frame_diff(self, data):
+        if data.dtype != np.float32:
+            data = np.array(data, dtype = np.float32)
+        num_frames = len(data)
+        avgBack = np.sum(data, axis=0)
+        avgBack /= num_frames
+        kernel = np.ones((3,3),np.uint8)
+        for i in range(num_frames):
+            frame = abs(data[i] - avgBack)
+            frame = np.array(frame, dtype = np.uint8)
+            frame = cv2.GaussianBlur(frame,(3,3),0)
+            g = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+            _, g = cv2.threshold(g,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+            g = cv2.morphologyEx(g , cv2.MORPH_OPEN, kernel)
+            frame = cv2.bitwise_and(frame,frame, mask= g)	    
+            data[i] = frame
+        return np.array(data,dtype=np.float32)    
+
     def frame_difference(self, video):
         num_frames = len(video)
         k = self.frame_diff_interval
@@ -394,7 +413,7 @@ class DataGenerator(Sequence):
             data = self.temporal_elastic_transformation(data,prob=0.2)
             data = self.gaussian_blur(data,prob=0.2,low=1,high=2) 
             if differences:
-                diff_data = self.frame_difference(data)
+                diff_data = self.avg_back_frame_diff(data)
             if frames:    
                 data = self.pepper(data,prob=0.3,ratio=45)
                 data = self.salt(data,prob=0.3,ratio=45)
@@ -402,15 +421,17 @@ class DataGenerator(Sequence):
             if self.dataset == 'rwf2000' or self.dataset == 'surv':
                 data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)  # center cropping only for test generators
             if differences:
-                diff_data = self.frame_difference(data)
+                diff_data = self.avg_back_frame_diff(data)
 
         if frames:
-            data = np.array(data, dtype=np.float32)     
-            data = self.normalize(data)
+            data = np.array(data, dtype=np.float32)
+            if self.normalize_:     
+                data = self.normalize(data)
             assert (data.shape == (self.target_frames,self.resize, self.resize,3)), str(data.shape)
         if differences:
             diff_data = np.array(diff_data, dtype=np.float32)
-            diff_data = self.normalize(diff_data)
+            if self.normalize_:
+                diff_data = self.normalize(diff_data)
             assert (diff_data.shape == (self.target_frames - self.frame_diff_interval, self.resize, self.resize, 3)), str(data.shape)
 
         if self.mode == "both":

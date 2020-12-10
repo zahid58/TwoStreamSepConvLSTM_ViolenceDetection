@@ -28,12 +28,12 @@ import pandas as pd
 model_type = "proposed" # [ "proposed", "convlstm", "biconvlstm"]
 mode = "both" # ["both","only_frames","only_differneces"]
 
-dataset = 'rwf2000' # surv
-dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies', 'surv':'surv_dataset'}
+dataset = 'rwf2000' 
+dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies'}
 
 if model_type == "proposed":
     if dataset == "rwf2000":
-        initial_learning_rate = 2e-04
+        initial_learning_rate = 4e-04
     else:
         initial_learning_rate = 1e-06
 elif model_type == "biconvlstm":
@@ -50,7 +50,7 @@ input_frame_size = 224
 frame_diff_interval = 1
 if model_type == "convlstm" or model_type == "biconvlstm":
     mode = "only_differences"  
-lstm_type = 'sepconv' # conv
+lstm_type = 'attensepconv' # conv
 
 crop_dark = {
     'hockey' : (16,45),
@@ -62,11 +62,11 @@ crop_dark = {
 
 #---------------------------------------------------
 
-epochs = 20
+epochs = 50
 
 preprocess_data = False
 
-create_new_model = True
+create_new_model = False
 
 currentModelPath = '/gdrive/My Drive/THESIS/Data/' + \
     str(dataset) + '_currentModel'
@@ -78,9 +78,7 @@ rwfPretrainedPath = 'NOT_SET'
 
 learning_rate = None   
 
-cnn_trainable = False  #
-
-yolo_trainable = False  #
+cnn_trainable = True  
 
 loss = 'categorical_crossentropy'
 
@@ -138,18 +136,12 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
 #--------------------------------------------------
 
 print('> cnn_trainable : ',cnn_trainable)
-if create_new_model:
+if model_type == "proposed":
     print('> creating new model...', model_type)
-    if model_type == "proposed":
-        model = cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, yolo_trainable = yolo_trainable, frame_diff_interval = frame_diff_interval, mode="all", lstm_type=lstm_type)
-        if dataset == "hockey" or dataset == "movies" or dataset == "surv":
+    model = cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode="both", lstm_type=lstm_type)
+    if dataset == "hockey" or dataset == "movies":
             print('> loading weights pretrained on rwf dataset from', rwfPretrainedPath)
             model.load_weights(rwfPretrainedPath)
-    elif model_type == "convlstm":
-        model =  cnn_lstm_models.getConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode = mode)    
-    elif model_type == "biconvlstm":
-        model =  cnn_lstm_models.getBiConvLSTM(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode = mode)
-    
     optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
     model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
     print('> new model created')
@@ -157,8 +149,8 @@ if create_new_model:
 else:
     print('> getting the model from...', currentModelPath)  
     if model_type == "proposed":
-        model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, yolo_trainable = yolo_trainable, frame_diff_interval = frame_diff_interval, mode="all", lstm_type=lstm_type)
-        optimizer = Adam(lr=1e-05, amsgrad=True)
+        model =  cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode="both", lstm_type=lstm_type)
+        optimizer = Adam(lr=5e-05, amsgrad=True)
         model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
         model.load_weights(currentModelPath)
     else:
