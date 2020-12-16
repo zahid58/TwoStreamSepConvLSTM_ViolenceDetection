@@ -50,7 +50,7 @@ input_frame_size = 224
 frame_diff_interval = 1
 if model_type == "convlstm" or model_type == "biconvlstm":
     mode = "only_differences"  
-lstm_type = 'attensepconv' # conv
+lstm_type = 'sepconv' # attensepconv
 
 crop_dark = {
     'hockey' : (16,45),
@@ -136,16 +136,16 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
 #--------------------------------------------------
 
 print('> cnn_trainable : ',cnn_trainable)
-if model_type == "proposed":
-    print('> creating new model...', model_type)
-    model = cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode="both", lstm_type=lstm_type)
-    if dataset == "hockey" or dataset == "movies":
-            print('> loading weights pretrained on rwf dataset from', rwfPretrainedPath)
-            model.load_weights(rwfPretrainedPath)
-    optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
-    model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
-    print('> new model created')
-    
+if create_new_model:
+    if model_type == "proposed":
+        print('> creating new model...', model_type)
+        model = cnn_lstm_models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode="both", lstm_type=lstm_type)
+        if dataset == "hockey" or dataset == "movies":
+                print('> loading weights pretrained on rwf dataset from', rwfPretrainedPath)
+                model.load_weights(rwfPretrainedPath)
+        optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
+        model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
+        print('> new model created')    
 else:
     print('> getting the model from...', currentModelPath)  
     if model_type == "proposed":

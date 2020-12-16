@@ -304,25 +304,25 @@ class DataGenerator(Sequence):
             video = video[:, x-80:x+80, y-80:y+80, :]
             video = self.resize_frames(video)
         # get cropped video
-        return video 
+        return video    
 
-    def avg_back_frame_diff(self, data):
-        if data.dtype != np.float32:
-            data = np.array(data, dtype = np.float32)
-        num_frames = len(data)
-        avgBack = np.sum(data, axis=0)
-        avgBack /= num_frames
-        kernel = np.ones((3,3),np.uint8)
-        for i in range(num_frames):
-            frame = abs(data[i] - avgBack)
-            frame = np.array(frame, dtype = np.uint8)
-            frame = cv2.GaussianBlur(frame,(3,3),0)
-            g = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-            _, g = cv2.threshold(g,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-            g = cv2.morphologyEx(g , cv2.MORPH_OPEN, kernel)
-            frame = cv2.bitwise_and(frame,frame, mask= g)	    
-            data[i] = frame
-        return np.array(data,dtype=np.float32)    
+    def background_suppress(self, data):
+        video = np.array(data, dtype = np.float32)
+        avgBack = np.mean(video, axis=0)
+        video = np.abs(video - avgBack)
+        return video
+        # kernel = np.ones((3,3),np.uint8)
+        # for i in range(len(video)):
+        #     frame = video[i]
+        #     f = abs(frame - avgBack)
+        #     # f = np.array(f, dtype = np.uint8)
+        #     # f = cv2.GaussianBlur(f,(3,3),0)
+        #     # g = cv2.cvtColor(f, cv2.COLOR_RGB2GRAY)
+        #     # _, g = cv2.threshold(g,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+        #     # g = cv2.morphologyEx(g , cv2.MORPH_OPEN, kernel)
+        #     # frame = cv2.bitwise_and(frame,frame, mask= g)	    
+        #     video[i] = frame
+        # return video   
 
     def frame_difference(self, video):
         num_frames = len(video)
@@ -400,7 +400,6 @@ class DataGenerator(Sequence):
             frames = False
             differences = True
 
-
         # data augmentation
         if self.data_aug:
             data = self.random_brightness(data, (0.5, 1.5))
@@ -412,16 +411,20 @@ class DataGenerator(Sequence):
             data = self.upsample_downsample(data,prob=0.5)
             data = self.temporal_elastic_transformation(data,prob=0.2)
             data = self.gaussian_blur(data,prob=0.2,low=1,high=2) 
+            
             if differences:
-                diff_data = self.avg_back_frame_diff(data)
-            if frames:    
+                diff_data = self.frame_difference(data)
+            if frames: 
+                data = self.background_suppress(data) ####   
                 data = self.pepper(data,prob=0.3,ratio=45)
                 data = self.salt(data,prob=0.3,ratio=45)
         else:
             if self.dataset == 'rwf2000' or self.dataset == 'surv':
                 data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)  # center cropping only for test generators
             if differences:
-                diff_data = self.avg_back_frame_diff(data)
+                diff_data = self.frame_difference(data)
+            if frames:
+                data = self.background_suppress(data) ####
 
         if frames:
             data = np.array(data, dtype=np.float32)

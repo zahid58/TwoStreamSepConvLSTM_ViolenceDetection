@@ -1103,8 +1103,7 @@ class AttenSepConvLSTM2DCell(DropoutRNNCellMixin, Layer):
     self.strides = conv_utils.normalize_tuple(strides, 2, 'strides')
     self.padding = conv_utils.normalize_padding(padding)
     self.data_format = conv_utils.normalize_data_format(data_format)
-    self.dilation_rate = conv_utils.normalize_tuple(dilation_rate, 2,
-                                                    'dilation_rate')
+    self.dilation_rate = conv_utils.normalize_tuple(dilation_rate, 2,'dilation_rate')
     self.depth_multiplier = depth_multiplier                                                   
     self.activation = activations.get(activation)
     self.recurrent_activation = activations.get(recurrent_activation)

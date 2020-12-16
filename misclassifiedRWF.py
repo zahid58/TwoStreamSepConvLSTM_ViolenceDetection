@@ -38,7 +38,7 @@ lstm_type = 'attensepconv' # conv
 
 preprocess_data = False
 
-bestValPath =  '/gdrive/My Drive/THESIS/Data/attenSepConvLSTMmodel/' + \
+bestValPath =  '/gdrive/My Drive/THESIS/Data/pretrainedModels/attenSepConvLSTMmodel/' + \
     str(dataset) + '_best_val_acc_Model'   
  
 ###################################################
@@ -89,23 +89,52 @@ SavePath = '/gdrive/My Drive/THESIS/Data/results/' + str(dataset)+'/'
 
 #--------------------------------------------------
 
-def avg_back_frame_diff(data):
-    if data.dtype != np.float32:
-        data = np.array(data, dtype = np.float32)
-    num_frames = len(data)
-    avgBack = np.sum(data, axis=0)
-    avgBack /= num_frames
-    kernel = np.ones((3,3),np.uint8)
-    for i in range(num_frames):
-        frame = abs(data[i] - avgBack)
-        frame = np.array(frame, dtype = np.uint8)
-        frame = cv2.GaussianBlur(frame,(3,3),0)
-        g = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-        _, g = cv2.threshold(g,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-        g = cv2.morphologyEx(g , cv2.MORPH_OPEN, kernel)
-        frame = cv2.bitwise_and(frame,frame, mask= g)	    
-        data[i] = frame
-    return np.array(data,dtype=np.float32)    
+def background_suppress(data):
+    video = np.array(data, dtype = np.float32)
+    avgBack = np.mean(video, axis=0)
+    video = np.abs(video - avgBack)
+    return video
+
+
+def frame_difference(video):
+    out =  np.abs(video[1:] - video[:-1])
+    print(out.shape)
+    return out
+
+# def frame_difference(video):
+#     zero_shape = (1, video.shape[1], video.shape[2], video.shape[3])
+#     zero_frame = np.zeros(zero_shape)
+#     k_1 = np.concatenate((video, zero_frame), axis = 0 )
+#     k_ = np.concatenate((zero_frame, video), axis = 0 )
+#     out =  np.abs(k_1 - k_)[:-2]
+#     print(out.shape)
+#     return out
+
+# def background_suppress(video):
+#     data = np.array(video, dtype = np.float32)
+#     num_frames = len(data)
+#     avgBack = np.sum(data, axis=0)
+#     avgBack /= num_frames
+#     # kernel = np.ones((3,3),np.uint8)
+#     for i in range(num_frames):
+#         frame = abs(data[i] - avgBack)
+#         # frame = np.array(frame, dtype = np.uint8)
+#         # frame = cv2.GaussianBlur(frame,(3,3),0)
+#         # g = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+#         # _, g = cv2.threshold(g,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+#         # g = cv2.morphologyEx(g , cv2.MORPH_OPEN, kernel)
+#         # frame = cv2.bitwise_and(frame,frame, mask= g)	    
+#         data[i] = frame
+#     return np.array(data,dtype=np.float32)    
+
+# def frame_difference(video):
+#     num_frames = len(video)
+#     k = 1
+#     out = []
+#     for i in range(num_frames - k):
+#         out.append(np.abs(video[i+k] - video[i]))
+#     return np.array(out,dtype=np.float32)
+
 
 def normalize(data):
     data = (data / 255.0).astype(np.float32)
@@ -142,7 +171,7 @@ def evaluate(model, datagen, dest):
         if i == 0:
             print("data shape:", data.shape)
             print("target:",target, " predicted:",predicted)
-        if( predicted != target ):
+        if( predicted != target ) or i==106 or i==112:
             print('----------------------------------')
             num_mis += 1
             print("misclassification at file ", str(i))
@@ -150,9 +179,11 @@ def evaluate(model, datagen, dest):
             if target == 1:
                 label = "NonViolent"
             else:
-                label = "Violent"
+                label = "Violent"     
             saveVideo(data, "frames_"+str(i)+"_"+label+".avi", dest)
-            diff_data = new_frame_diff(data)
+            diff_data = frame_difference(data) 
+            data = background_suppress(data)
+            saveVideo(data, "frames_bs"+str(i)+"_"+label+".avi", dest)
             saveVideo(diff_data, "frameDifference_"+str(i)+"_"+label+".avi", dest)
     print("total: ", total, " wrong: ",num_mis, " right: ", total - num_mis, " accuracy: ", np.round((total-num_mis)/total,5))
 

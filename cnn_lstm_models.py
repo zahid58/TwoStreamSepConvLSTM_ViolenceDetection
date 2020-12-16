@@ -308,18 +308,24 @@ def getProposedModel(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainabl
         
         frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
 
-  
-    frames_lstm = MaxPooling2D((2,2))(frames_lstm)
-    x1 = Flatten()(frames_lstm) 
-    x1 = Dense(64)(x1)
-    x1 = LeakyReLU(alpha=0.1)(x1)
-    
-    frames_diff_lstm = MaxPooling2D((2,2))(frames_diff_lstm)
-    x2 = Flatten()(frames_diff_lstm)
-    x2 = Dense(64)(x2)
-    x2 = LeakyReLU(alpha=0.1)(x2)
+    if frames:
+        frames_lstm = MaxPooling2D((2,2))(frames_lstm)
+        x1 = Flatten()(frames_lstm) 
+        x1 = Dense(64)(x1)
+        x1 = LeakyReLU(alpha=0.1)(x1)
 
-    x = Concatenate(axis=-1)([x1, x2])
+    if differences:    
+        frames_diff_lstm = MaxPooling2D((2,2))(frames_diff_lstm)
+        x2 = Flatten()(frames_diff_lstm)
+        x2 = Dense(64)(x2)
+        x2 = LeakyReLU(alpha=0.1)(x2)
+
+    if mode == "both":
+        x = Concatenate(axis=-1)([x1, x2])
+    elif mode == "only_frames":
+        x = x1
+    elif mode == "only_differences":
+        x = x2
     x = Dropout(dense_dropout, seed = seed)(x) 
     x = Dense(16)(x)
     x = LeakyReLU(alpha=0.1)(x)
