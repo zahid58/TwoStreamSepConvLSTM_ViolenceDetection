@@ -22,8 +22,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callbac
 from tensorflow.python.keras import backend as K
 import pandas as pd
 
-
-#-----------------------------------
+#---------------------------------------------------
 
 model_type = "proposed" # [ "proposed", "convlstm", "biconvlstm"]
 mode = "both" # ["both","only_frames","only_differneces"]
@@ -47,7 +46,6 @@ if model_type == "biconvlstm":
 vid_len = 32  # 32
 dataset_frame_size = 320
 input_frame_size = 224
-frame_diff_interval = 1
 if model_type == "convlstm" or model_type == "biconvlstm":
     mode = "only_differences"  
 lstm_type = 'sepconv' # attensepconv
@@ -58,7 +56,6 @@ crop_dark = {
     'rwf2000': (0,0),
     'surv': (0,0)
 }
-
 
 #---------------------------------------------------
 
@@ -87,7 +84,7 @@ if model_type == "proposed":
     one_hot = False
     loss = 'binary_crossentropy'
 
-#---------------------------------------------------
+#----------------------------------------------------
 
 if preprocess_data:
 
@@ -107,8 +104,6 @@ if preprocess_data:
         os.mkdir(os.path.join(dataset,'processed'))
         convert_dataset_to_npy(src='{}/videos'.format(dataset),dest='{}/processed'.format(dataset), crop_x_y=crop_dark[dataset], target_frames=vid_len, frame_size= dataset_frame_size )
 
-
-
 train_generator = DataGenerator(directory='{}/processed/train'.format(dataset),
                                 batch_size=batch_size,
                                 data_augmentation=True,
@@ -117,7 +112,6 @@ train_generator = DataGenerator(directory='{}/processed/train'.format(dataset),
                                 sample=False,
                                 resize=input_frame_size,
                                 target_frames = vid_len,
-                                frame_diff_interval = frame_diff_interval,
                                 dataset = dataset,
                                 mode = mode)
 
@@ -129,7 +123,6 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                sample=False,
                                resize=input_frame_size,
                                target_frames = vid_len,
-                               frame_diff_interval = frame_diff_interval,
                                dataset = dataset,
                                mode = mode)
 
@@ -155,9 +148,9 @@ else:
         model.load_weights(currentModelPath)
     else:
         raise Exception("NOT DEFINED WHAT TO DO!")
-        #model = load_model(currentModelPath)
+        # model = load_model(currentModelPath)
     # if learning_rate is not None:
-    #     K.set_value(model.optimizer.lr, learning_rate)  
+    #     K.set_value(model.optimizer.lr, learning_rate)
 
 print('> Summary of the model : ')
 model.summary(line_length=140)
@@ -166,7 +159,6 @@ print('> Optimizer : ', model.optimizer.get_config())
 dot_img_file = 'model_architecture.png'
 print('> plotting the model architecture and saving at ', dot_img_file)
 plot_model(model, to_file=dot_img_file, show_shapes=True)
-
 
 #--------------------------------------------------
 

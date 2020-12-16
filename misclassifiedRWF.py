@@ -50,7 +50,6 @@ if preprocess_data:
         convert_dataset_to_npy(src='{}/RWF-2000'.format(dataset), dest='{}/processed'.format(
             dataset), crop_x_y=None, target_frames=vid_len, frame_size= dataset_frame_size)
 
-
 # train_generator = DataGenerator(directory='{}/processed/train'.format(dataset),
 #                                 batch_size=1,
 #                                 data_augmentation=False,
@@ -62,6 +61,7 @@ if preprocess_data:
 #                                 frame_diff_interval = frame_diff_interval,
 #                                 dataset = dataset,
 #                                 normalize_ = False,
+#                                 background_suppress = False,
 #                                 mode = mode)
 
 test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
@@ -75,6 +75,7 @@ test_generator = DataGenerator(directory='{}/processed/test'.format(dataset),
                                frame_diff_interval = frame_diff_interval,
                                dataset = dataset,
                                normalize_ = False,
+                               background_suppress = False,
                                mode = mode)
 
 #--------------------------------------------------

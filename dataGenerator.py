@@ -19,7 +19,7 @@ class DataGenerator(Sequence):
         If you want to load file with other data format, please fix the method of "load_data" as you want
     """
 
-    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=False, normalize_ = True, resize=224, frame_diff_interval=1, dataset=None, mode="both"): 
+    def __init__(self, directory, batch_size=1, shuffle=False, data_augmentation=True, one_hot=False, target_frames=32, sample=False, normalize_ = True, background_suppress = True, resize=224, frame_diff_interval=1, dataset=None, mode="both"): 
         # Initialize the params
         self.dataset = dataset
         self.batch_size = batch_size
@@ -29,6 +29,7 @@ class DataGenerator(Sequence):
         self.one_hot = one_hot
         self.target_frames = target_frames
         self.sample = sample
+        self.background_suppress = background_suppress
         self.mode = mode  #["only_frames","only_differences", "both"]
         self.resize = resize
         self.frame_diff_interval = frame_diff_interval
@@ -303,35 +304,17 @@ class DataGenerator(Sequence):
                 a=np.arange(80, 224-80), replace=True)
             video = video[:, x-80:x+80, y-80:y+80, :]
             video = self.resize_frames(video)
-        # get cropped video
         return video    
 
-    def background_suppress(self, data):
+    def background_suppression(self, data):
         video = np.array(data, dtype = np.float32)
         avgBack = np.mean(video, axis=0)
         video = np.abs(video - avgBack)
         return video
-        # kernel = np.ones((3,3),np.uint8)
-        # for i in range(len(video)):
-        #     frame = video[i]
-        #     f = abs(frame - avgBack)
-        #     # f = np.array(f, dtype = np.uint8)
-        #     # f = cv2.GaussianBlur(f,(3,3),0)
-        #     # g = cv2.cvtColor(f, cv2.COLOR_RGB2GRAY)
-        #     # _, g = cv2.threshold(g,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-        #     # g = cv2.morphologyEx(g , cv2.MORPH_OPEN, kernel)
-        #     # frame = cv2.bitwise_and(frame,frame, mask= g)	    
-        #     video[i] = frame
-        # return video   
 
     def frame_difference(self, video):
-        num_frames = len(video)
-        k = self.frame_diff_interval
-        out = []
-        for i in range(num_frames - k):
-            out.append(video[i+k] - video[i])
-        return np.array(out,dtype=np.float32)
-
+        return np.abs(video[1:] - video[:-1])
+        
     def pepper(self, video, prob = 0.5, ratio = 100):
         s = np.random.rand()
         if s > prob:
@@ -378,8 +361,7 @@ class DataGenerator(Sequence):
         if s > prob:
             return video    
         return TemporalElasticTransformation()(video)
-           
-
+        
     def load_data(self, path):
 
         # load the processed .npy files
@@ -414,8 +396,8 @@ class DataGenerator(Sequence):
             
             if differences:
                 diff_data = self.frame_difference(data)
-            if frames: 
-                data = self.background_suppress(data) ####   
+            if frames and self.background_suppress:
+                data = self.background_suppression(data) ####   
                 data = self.pepper(data,prob=0.3,ratio=45)
                 data = self.salt(data,prob=0.3,ratio=45)
         else:
@@ -423,8 +405,8 @@ class DataGenerator(Sequence):
                 data = self.crop_center(data, x_crop=(320-224)//2, y_crop=(320-224)//2)  # center cropping only for test generators
             if differences:
                 diff_data = self.frame_difference(data)
-            if frames:
-                data = self.background_suppress(data) ####
+            if frames and self.background_suppress:
+                data = self.background_suppression(data) ####
 
         if frames:
             data = np.array(data, dtype=np.float32)
