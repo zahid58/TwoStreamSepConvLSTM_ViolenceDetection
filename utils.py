@@ -8,14 +8,13 @@ import os
 
 class SaveTrainingCurves(CB):
 
-    def __init__(self, save_path = None, split_num = 0, **kargs):
+    def __init__(self, save_path = None, **kargs):
         super(SaveTrainingCurves,self).__init__(**kargs)
 
-        self.save_path = save_path
-        self.split_num = split_num    
+        self.save_path = save_path   
         if not os.path.exists(self.save_path):
             os.mkdir(self.save_path)    
-        historyInDrivePath = self.save_path + 'split_'+ str(self.split_num) + '_history.csv'
+        historyInDrivePath = os.path.join(self.save_path , 'history.csv')
 
         history = None
         try:
@@ -41,9 +40,9 @@ class SaveTrainingCurves(CB):
         self.val_loss.append(logs.get('val_loss'))  
         history = {'acc':self.acc, 'val_acc':self.val_acc,'loss':self.loss,'val_loss':self.val_loss}
         # csv
-        historyInDrivePath = self.save_path + 'split_'+ str(self.split_num) + '_history.csv'
+        historyInDrivePath = os.path.join(self.save_path ,'history.csv')
         pd.DataFrame(history).to_csv(historyInDrivePath) # gdrive
-        pd.DataFrame(history).to_csv('split_'+ str(self.split_num) + '_history.csv')  # local
+        pd.DataFrame(history).to_csv('history.csv')  # local
         # graphs
         self.plot_graphs(history)
 
@@ -57,8 +56,8 @@ class SaveTrainingCurves(CB):
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         plt.grid(True)
-        plt.savefig('split_'+str(self.split_num)+'_accuracy.png',bbox_inches='tight') # local
-        plt.savefig( self.save_path + 'split_'+ str(self.split_num) + '_accuracy.png',bbox_inches='tight') # gdrive
+        plt.savefig('accuracy.png',bbox_inches='tight') # local
+        plt.savefig(os.path.join(self.save_path ,'accuracy.png'),bbox_inches='tight') # gdrive
         plt.close()
         # loss
         plt.figure(figsize=(10, 6))
@@ -69,8 +68,8 @@ class SaveTrainingCurves(CB):
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         plt.grid(True)
-        plt.savefig('split_'+str(self.split_num)+'_loss.png',bbox_inches='tight')  # local
-        plt.savefig( self.save_path + 'split_'+ str(self.split_num) + '_loss.png',bbox_inches='tight')  # gdrive
+        plt.savefig('loss.png',bbox_inches='tight')  # local
+        plt.savefig(os.path.join(self.save_path ,'loss.png'),bbox_inches='tight')  # gdrive
         plt.close()
 
 
@@ -78,21 +77,21 @@ def lr_scheduler(epoch, lr):
     decay_rate = 0.5
     decay_step = 5
     if epoch % decay_step == 0 and epoch and lr>6e-05:
+        print('> setting lr = ',lr * decay_rate)
         return lr * decay_rate
     return lr
 
-def save_as_csv(data, save_path, filename, split_num = 0):
+def save_as_csv(data, save_path, filename):
     print('saving',filename,'in csv format...')
-    DrivePath = save_path + 'split_'+ str(split_num) + filename
+    DrivePath = save_path + filename
     pd.DataFrame(data).to_csv(DrivePath) #gdrive
-    pd.DataFrame(data).to_csv('split_'+ str(split_num) + filename)  #local 
+    pd.DataFrame(data).to_csv(filename)  #local 
 
 
-def save_plot_history(history, save_path,split_num=0,pickle_only=True):
-    
+def save_plot_history(history, save_path, pickle_only=True):
     # pickle
     print('saving history in pickle format...')
-    historyFile = save_path + 'split_' + str(split_num) + '_history.pickle'
+    historyFile = save_path + 'history.pickle'
     try:
         file_ = open(historyFile, 'wb')
         pickle.dump(history, file_)
@@ -105,9 +104,9 @@ def save_plot_history(history, save_path,split_num=0,pickle_only=True):
 
     # csv
     print('saving history in csv format...')
-    historyInDrivePath = save_path + 'split_'+ str(split_num) + '_history.csv'
+    historyInDrivePath = save_path + 'history.csv'
     pd.DataFrame(history).to_csv(historyInDrivePath) #gdrive
-    pd.DataFrame(history).to_csv('split_'+ str(split_num) + '_history.csv')  #local
+    pd.DataFrame(history).to_csv('history.csv')  #local
     print('plotting and saving train test graphs...')
     
     # accuracy graph
@@ -119,8 +118,8 @@ def save_plot_history(history, save_path,split_num=0,pickle_only=True):
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
     plt.grid(True)
-    plt.savefig('split_'+str(split_num)+'_accuracy.png',bbox_inches='tight') #local
-    plt.savefig( save_path + 'split_'+ str(split_num) + '_accuracy.png',bbox_inches='tight') #gdrive
+    plt.savefig('accuracy.png',bbox_inches='tight') #local
+    plt.savefig( save_path + 'accuracy.png',bbox_inches='tight') #gdrive
     plt.close()
 
     # loss graph
@@ -132,42 +131,7 @@ def save_plot_history(history, save_path,split_num=0,pickle_only=True):
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
     plt.grid(True)
-    plt.savefig('split_'+str(split_num)+'_loss.png',bbox_inches='tight')  #local
-    plt.savefig( save_path + 'split_'+ str(split_num) + '_loss.png',bbox_inches='tight')  #gdrive
+    plt.savefig('loss.png',bbox_inches='tight')  #local
+    plt.savefig( save_path  + 'loss.png',bbox_inches='tight')  #gdrive
     plt.close()
-
-def evaluate_accuracy_method1(file_):
-    test_acc = []
-    for history in file_:
-        test_acc_fold = history['val_acc']
-        test_acc_fold = np.array(test_acc_fold,dtype=np.float32)
-        test_acc.append(test_acc_fold)
-    test_acc =  np.array(test_acc)
-    mean_acc =  np.mean(test_acc,axis=0)
-    print('--------------------------------------------')
-    print('accuracy_evaluation_method_1 : ')
-    epoch_index = np.argmax(mean_acc)
-    max_mean_acc = np.max(mean_acc)
-    print( 'max mean accuracy :',max_mean_acc, '_epoch :', (epoch_index + 1) )
-    start_index = max( epoch_index-10 , 0 )
-    end_index = min( epoch_index+10 , np.size(mean_acc)-1 )
-    hundred_acc = test_acc[:,start_index:end_index]
-    print('final accuracy :',np.mean(hundred_acc),'±',np.std(hundred_acc))
-    print('--------------------------------------------')
-
-
-
-def evaluate_accuracy_method2(file_):
-    test_acc = []
-    for history in file_:
-        test_acc_fold = history['val_acc']
-        test_acc_fold = np.array(test_acc_fold,dtype=np.float32)
-        test_acc.append(test_acc_fold)
-    test_acc = np.array(test_acc)
-    print('--------------------------------------------')
-    print("accuracy_evaluation_method_2 : (Sudhakaran's method)")
-    max_test_acc_fold = np.max(test_acc,axis=1)
-    print('max accuracy per fold : ',max_test_acc_fold)
-    print('final accuracy :',np.mean(max_test_acc_fold),'±',np.std(max_test_acc_fold))
-    print('--------------------------------------------')
 

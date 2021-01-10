@@ -11,71 +11,31 @@ import numpy as np
 def train_test_split(dataset_name=None, source=None, test_ratio=.20):
     assert (dataset_name == 'hockey' or dataset_name == 'movies' or dataset_name == 'surv')
     fightVideos = []
-    nonFightVideos = []
-    if dataset_name == 'surv':
-        fightVideos =  [ os.path.join(source, 'fight',  x) for x in os.listdir(os.path.join(source, 'fight')) ]
-        nonFightVideos =  [ os.path.join(source, 'noFight',  x) for x in os.listdir(os.path.join(source, 'noFight')) ]
-    else:  
-        for filename in os.listdir(source):
-            filepath = os.path.join(source, filename)
-            if filename.endswith('.avi') or filename.endswith('.mpg'):
-                if dataset_name == 'hockey':
-                    if filename.startswith('fi'):
-                        fightVideos.append(filepath)
-                    else:
-                        nonFightVideos.append(filepath)
-                elif dataset_name == 'movies':
-                    if 'fi' in filename:
-                        fightVideos.append(filepath)
-                    else:
-                        nonFightVideos.append(filepath)
-    random.seed(42)
+    nonFightVideos = [] 
+    for filename in os.listdir(source):
+        filepath = os.path.join(source, filename)
+        if filename.endswith('.avi') or filename.endswith('.mpg') or filename.endswith('.mp4'):
+            if dataset_name == 'hockey':
+                if filename.startswith('fi'):
+                    fightVideos.append(filepath)
+                else:
+                    nonFightVideos.append(filepath)
+            elif dataset_name == 'movies':
+                if 'fi' in filename:
+                    fightVideos.append(filepath)
+                else:
+                    nonFightVideos.append(filepath)
+    random.seed(0)
     random.shuffle(fightVideos)
     random.shuffle(nonFightVideos)
     fight_len = len(fightVideos)
-    split_index = fight_len - (fight_len*test_ratio)
+    split_index = int(fight_len - (fight_len*test_ratio))
     trainFightVideos = fightVideos[:split_index]
     testFightVideos = fightVideos[split_index:]
     trainNonFightVideos = nonFightVideos[:split_index]
     testNonFightVideos = nonFightVideos[split_index:]
     split = trainFightVideos, testFightVideos, trainNonFightVideos, testNonFightVideos
     return split
-
-
-def five_fold_split(dataset_name, source):
-    assert (dataset_name == 'hockey' or dataset_name == 'movies' or dataset_name == 'surv')
-    fightVideos = []
-    nonFightVideos = []
-    if dataset_name == 'surv':
-        fightVideos =  [ os.path.join(source, 'fight',  x) for x in os.listdir(os.path.join(source, 'fight')) ]
-        nonFightVideos =  [ os.path.join(source, 'noFight',  x) for x in os.listdir(os.path.join(source, 'noFight')) ]
-    else:  
-        for filename in os.listdir(source):
-            filepath = os.path.join(source, filename)
-            if filename.endswith('.avi') or filename.endswith('.mp4'):
-                if dataset_name == 'hockey':
-                    if filename.startswith('fi'):
-                        fightVideos.append(filepath)
-                    else:
-                        nonFightVideos.append(filepath)
-                elif dataset_name == 'movies':
-                    if 'fi' in filename:
-                        fightVideos.append(filepath)
-                    else:
-                        nonFightVideos.append(filepath)
-    random.seed(42)
-    random.shuffle(fightVideos)
-    random.shuffle(nonFightVideos)
-    kf = KFold(n_splits=5, random_state=42, shuffle=True)
-    splits = []
-    for train_ind, test_ind in kf.split(fightVideos):
-        testFightVideos = [fightVideos[i] for i in test_ind]
-        trainFightVideos = [fightVideos[i] for i in train_ind]
-        trainNonFightVideos = [nonFightVideos[i] for i in train_ind]
-        testNonFightVideos = [nonFightVideos[i] for i in test_ind]
-        splits.append((trainFightVideos, testFightVideos,
-                       trainNonFightVideos, testNonFightVideos))
-    return splits
 
 
 def move_train_test(dest, data):

@@ -30,7 +30,8 @@ class DataGenerator(Sequence):
         self.target_frames = target_frames
         self.sample = sample
         self.background_suppress = background_suppress
-        self.mode = mode  #["only_frames","only_differences", "both"]
+        print("background suppression:", self.background_suppress)
+        self.mode = mode  # ["only_frames","only_differences", "both"]
         self.resize = resize
         self.frame_diff_interval = frame_diff_interval
         self.normalize_ = normalize_
@@ -313,7 +314,12 @@ class DataGenerator(Sequence):
         return video
 
     def frame_difference(self, video):
-        return np.abs(video[1:] - video[:-1])
+        num_frames = len(video)
+        k = self.frame_diff_interval
+        out = []
+        for i in range(num_frames - k):
+            out.append(video[i+k] - video[i])
+        return np.array(out,dtype=np.float32)
         
     def pepper(self, video, prob = 0.5, ratio = 100):
         s = np.random.rand()
