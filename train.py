@@ -25,6 +25,22 @@ def train(args):
 
     mode = args.mode # ["both","only_frames","only_differences"]
 
+    if args.fusionType != 'C':
+        if args.mode != 'both':
+            print("Only Concat fusion supports one stream versions. Changing mode to /'both/'...")
+            mode = "both"
+    
+    if args.fusionType != 'M':
+        if args.lstmType == '3dconvblock':
+            raise Exception('3dconvblock instead of lstm is only available for fusionType M ! aborting execution...')
+
+    if args.fusionType == 'C':
+        model_function = models.getProposedModelC
+    elif args.fusionType == 'A':
+        model_function = models.getProposedModelA
+    elif args.fusionType == 'M':
+        model_function = models.getProposedModelM
+
     dataset = args.dataset # ['rwf2000','movies','hockey']
     dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies'}
 
@@ -137,7 +153,7 @@ def train(args):
     print('> cnn_trainable : ',cnn_trainable)
     if create_new_model:
         print('> creating new model...')
-        model = models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
+        model = model_function(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
         if dataset == "hockey" or dataset == "movies":
             print('> loading weights pretrained on rwf dataset from', rwfPretrainedPath)
             model.load_weights(rwfPretrainedPath)
@@ -147,12 +163,12 @@ def train(args):
     else:
         print('> getting the model from...', currentModelPath)  
         if dataset == 'rwf2000':
-            model =  models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
+            model =  model_function(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
             optimizer = Adam(lr=resume_learning_rate, amsgrad=True)
             model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
             model.load_weights(currentModelPath)
         elif  dataset == "hockey" or dataset == "movies":
-            model =  models.getProposedModel(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
+            model =  model_function(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
             optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
             model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
             model.load_weights(currentModelPath)           
@@ -211,7 +227,8 @@ def main():
     parser.add_argument('--preprocessData', help='whether need to preprocess data ( make npy file from video clips )',action='store_true')
     parser.add_argument('--mode', type=str, default='both', help='model type - both, only_frames, only_differences', choices=['both', 'only_frames', 'only_differences']) 
     parser.add_argument('--dataset', type=str, default='rwf2000', help='dataset - rwf2000, movies, hockey', choices=['rwf2000','movies','hockey']) 
-    parser.add_argument('--lstmType', type=str, default='sepconv', help='lstm - sepconv, asepconv', choices=['sepconv','asepconv']) 
+    parser.add_argument('--lstmType', type=str, default='sepconv', help='lstm - conv, sepconv, asepconv, 3dconvblock(use 3dconvblock instead of lstm)', choices=['sepconv','asepconv', 'conv', '3dconvblock'])
+    parser.add_argument('--fusionType', type=str, default='concat', help='fusion type - A for add, M for multiply, C for concat', choices=['C','A','M']) 
     parser.add_argument('--savePath', type=str, default='/gdrive/My Drive/THESIS/Data', help='folder path to save the models')
     parser.add_argument('--rwfPretrainedPath', type=str, default='NOT_SET', help='path to the weights pretrained on rwf dataset')
     parser.add_argument('--resumePath', type=str, default='NOT_SET', help='path to the weights for resuming from previous checkpoint')
