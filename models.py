@@ -61,6 +61,8 @@ def getProposedModelC(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainab
             frames_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
         elif lstm_type == 'asepconv':    
             frames_lstm = AttenSepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='AttenSepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
+        elif lstm_type == '3dconvblock':
+            frames_lstm = conv3d_block(frames_cnn, 'frames_3d_conv_block')
         else:
             raise Exception("lstm type not recognized!")
 
@@ -85,19 +87,23 @@ def getProposedModelC(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainab
             frames_diff_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
         elif lstm_type == 'asepconv':    
             frames_diff_lstm = AttenSepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='AttenSepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
+        elif lstm_type == '3dconvblock':
+            frames_diff_lstm = conv3d_block(frames_diff_cnn, 'frames_diff_3d_conv_block')
         else:
             raise Exception("lstm type not recognized!")
 
         frames_diff_lstm = BatchNormalization( axis = -1 )(frames_diff_lstm)
 
     if frames:
-        frames_lstm = MaxPooling2D((2,2))(frames_lstm)
+        if lstm_type != '3dconvblock':
+            frames_lstm = MaxPooling2D((2,2))(frames_lstm)
         x1 = Flatten()(frames_lstm) 
         x1 = Dense(64)(x1)
         x1 = LeakyReLU(alpha=0.1)(x1)
         
     if differences:
-        frames_diff_lstm = MaxPooling2D((2,2))(frames_diff_lstm)
+        if lstm_type != '3dconvblock':
+            frames_diff_lstm = MaxPooling2D((2,2))(frames_diff_lstm)
         x2 = Flatten()(frames_diff_lstm)
         x2 = Dense(64)(x2)
         x2 = LeakyReLU(alpha=0.1)(x2)
@@ -169,8 +175,6 @@ def getProposedModelM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainab
             frames_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
         elif lstm_type == 'asepconv':    
             frames_lstm = AttenSepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='AttenSepConvLSTM2D_1', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_cnn)
-        elif lstm_type == '3dconv':
-            frames_lstm = conv3d_block(frames_cnn, 'frames_3d_conv_block')(frames_cnn)
         else:
             raise Exception("lstm type not recognized!")
 
@@ -195,8 +199,6 @@ def getProposedModelM(size=224, seq_len=32 , cnn_weight = 'imagenet',cnn_trainab
             frames_diff_lstm = ConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='ConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
         elif lstm_type == 'asepconv':    
             frames_diff_lstm = AttenSepConvLSTM2D( filters = 64, kernel_size=(3, 3), padding='same', return_sequences=False, dropout=lstm_dropout, recurrent_dropout=lstm_dropout, name='AttenSepConvLSTM2D_2', kernel_regularizer=l2(weight_decay), recurrent_regularizer=l2(weight_decay))(frames_diff_cnn)
-        elif lstm_type == '3dconvblock':
-            frames_diff_lstm = conv3d_block(frames_diff_cnn, 'frames_diff_3d_conv_block')(frames_diff_cnn)
         else:
             raise Exception("lstm type not recognized!")
 
@@ -360,8 +362,9 @@ def conv3d_block(input_, name_):
 
     x = Conv3D(
         128, kernel_size=(1,3,3), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same')(x)
-    x = Conv3D(
-        128, kernel_size=(3,1,1), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same')(x)
-    x = MaxPooling3D(pool_size=(1,3,3))(x)
+    # x = Conv3D(
+    #     128, kernel_size=(3,1,1), strides=(1,1,1), kernel_initializer='he_normal', activation='relu', padding='same')(x)
+    # x = MaxPooling3D(pool_size=(1,3,3))(x)
 
-    return Model(inputs = input_, outputs = x, name = name_)
+    # return Model(inputs = input_, outputs = x, name = name_)
+    return x
