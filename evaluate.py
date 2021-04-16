@@ -6,6 +6,7 @@ from tensorflow.random import set_seed
 seed(42)
 rseed(42)
 set_seed(42)
+import tensorflow as tf
 import random
 import pickle
 import shutil
@@ -18,10 +19,25 @@ from tensorflow.keras.utils import plot_model
 from tensorflow.python.keras import backend as K
 import pandas as pd
 import argparse
+from tensorflow.keras.optimizers import RMSprop, Adam
 
 def evaluate(args):
 
-    mode = args.mode # ["both","only_frames","only_differneces"]
+    mode = args.mode # ["both","only_frames","only_differences"]
+
+    if args.fusionType != 'C':
+        if args.mode != 'both':
+            print("Only Concat fusion supports one stream versions. Changing mode to /'both/'...")
+            mode = "both"
+        if args.lstmType == '3dconvblock':
+            raise Exception('3dconvblock instead of lstm is only available for fusionType C ! aborting execution...')
+
+    if args.fusionType == 'C':
+        model_function = models.getProposedModelC
+    elif args.fusionType == 'A':
+        model_function = models.getProposedModelA
+    elif args.fusionType == 'M':
+        model_function = models.getProposedModelM
 
     dataset = args.dataset # ['rwf2000','movies','hockey']
     dataset_videos = {'hockey':'raw_videos/HockeyFights','movies':'raw_videos/movies'}
@@ -73,16 +89,17 @@ def evaluate(args):
             convert_dataset_to_npy(src='{}/videos'.format(dataset),dest='{}/processed'.format(dataset), crop_x_y=crop_dark[dataset], target_frames=vid_len, frame_size= dataset_frame_size )
 
 
-    train_generator = DataGenerator(directory = '{}/processed/train'.format(dataset),
-                                    batch_size = batch_size,
-                                    data_augmentation = False,
-                                    shuffle = False,
-                                    one_hot = one_hot,
-                                    sample = False,
-                                    resize = input_frame_size,
-                                    target_frames = vid_len,
-                                    dataset = dataset,
-                                    mode = mode)
+    # train_generator = DataGenerator(directory = '{}/processed/train'.format(dataset),
+    #                                 batch_size = batch_size,
+    #                                 data_augmentation = False,
+    #                                 shuffle = False,
+    #                                 one_hot = one_hot,
+    #                                 sample = False,
+    #                                 resize = input_frame_size,
+    #                                 background_suppress = True,
+    #                                 target_frames = vid_len,
+    #                                 dataset = dataset,
+    #                                 mode = mode)
 
     test_generator = DataGenerator(directory = '{}/processed/test'.format(dataset),
                                     batch_size = batch_size,
@@ -91,6 +108,7 @@ def evaluate(args):
                                     one_hot = one_hot,
                                     sample = False,
                                     resize = input_frame_size,
+                                    background_suppress = True,
                                     target_frames = vid_len,
                                     dataset = dataset,
                                     mode = mode)
@@ -98,8 +116,11 @@ def evaluate(args):
     #--------------------------------------------------
 
     print('> getting the model from...', weightsPath)  
-    model =  models.getProposedModel(size=input_frame_size, seq_len=vid_len, frame_diff_interval = frame_diff_interval, mode="both", lstm_type=lstm_type)
-    model.load_weights(weightsPath)
+    model =  model_function(size=input_frame_size, seq_len=vid_len, frame_diff_interval = frame_diff_interval, mode="both", lstm_type=lstm_type)
+    optimizer = Adam(lr=4e-4, amsgrad=True)
+    loss = 'binary_crossentropy'
+    model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
+    model.load_weights(weightsPath).expect_partial()
     model.trainable = False
 
     # print('> Summary of the model : ')
@@ -111,14 +132,14 @@ def evaluate(args):
                     
     #--------------------------------------------------
 
-    train_results = model.evaluate(
-        steps = len(train_generator),
-        x=train_generator,
-        verbose=1,
-        workers=8,
-        max_queue_size=8,
-        use_multiprocessing=False,
-    )
+    # train_results = model.evaluate(
+    #     steps = len(train_generator),
+    #     x=train_generator,
+    #     verbose=1,
+    #     workers=8,
+    #     max_queue_size=8,
+    #     use_multiprocessing=False,
+    # )
 
     test_results = model.evaluate(
         steps = len(test_generator),
@@ -128,9 +149,14 @@ def evaluate(args):
         max_queue_size=8,
         use_multiprocessing=False,
     )
-
-    save_as_csv(train_results, "", 'train_results.csv')
-    save_as_csv(test_results, "", 'test_resuls.csv')
+    print("====================")
+    print("     Results        ")
+    print("====================")
+    print("> Test Loss:", test_results[0])
+    print("> Test Accuracy:", test_results[1])
+    print("====================")
+    # save_as_csv(train_results, "", 'train_results.csv')
+    save_as_csv(test_results, "", 'test_results.csv')
 
     #---------------------------------------------------
 
@@ -143,6 +169,7 @@ def main():
     parser.add_argument('--dataset', type=str, default='rwf2000', help='dataset - rwf2000, movies, hockey', choices=['rwf2000','movies','hockey']) 
     parser.add_argument('--lstmType', type=str, default='sepconv', help='lstm - sepconv, asepconv', choices=['sepconv','asepconv']) 
     parser.add_argument('--weightsPath', type=str, default='NOT_SET', help='path to the weights pretrained on rwf dataset')
+    parser.add_argument('--fusionType', type=str, default='C', help='fusion type - A for add, M for multiply, C for concat', choices=['C','A','M']) 
     args = parser.parse_args()
     evaluate(args)
 
