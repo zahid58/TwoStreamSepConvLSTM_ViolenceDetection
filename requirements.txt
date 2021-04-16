@@ -8,4 +8,5 @@ numpy==1.18.5
 tqdm==4.41.1
 Pillow==8.0.1
 scikit_learn==0.24.0
+
 skimage==0.0
