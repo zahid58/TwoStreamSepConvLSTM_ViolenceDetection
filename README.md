@@ -29,7 +29,7 @@ To get RWF2000 dataset,
 
 Hockey and Movies dataset can be downloaded from this link - 
 https://drive.google.com/file/d/1-4yHiSzAzOz9L0EEbw58e-soZnlFEVpP/view?usp=sharing
-Here we have already splitted the dataset and converted into .npy files. So, no need to pass *--preprocessData* while using Hockey and Movies dataset from the link above.
+Here we have already splitted the dataset and converted into .npy files. So, no need to pass the argument *--preprocessData* while using Hockey and Movies dataset from the link above.
 
 ### How to run
 #### train
