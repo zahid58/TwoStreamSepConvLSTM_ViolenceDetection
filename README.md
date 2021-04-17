@@ -1,9 +1,8 @@
 <h1 align="center">
-<p>Efficient Two-Stream Network for Violence
-Detection
+<p>Efficient Two-Stream Network for Violence Detection Using Separable Convolutional LSTM
 </h1>
 <h6 align="center">
-<p>Using Separable Convolutional LSTM
+<p> 
 </h3>
 <!---
 <p align="center">
