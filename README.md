@@ -43,9 +43,6 @@ python evaluate.py --dataset rwf2000 --vidLen 32 --batchSize 4 --mode both --lst
 ```
 this will save the results in *test_results.csv*.
 
-### Remarks
-This is an extension of <a href="https://www.pyimagesearch.com/2019/11/04/traffic-sign-classification-with-keras-and-deep-learning/">this tutorial</a> made by *pyimagsearch*. In this tutorial he shows us how to classify cropped traffic sign image using tensorflow. We extend his work to build an object detection system by implementing both localization and recognition stages.
-
 ### Required libraries
 Python 3.7, Tensorflow 2.3.1, OpenCV 4.1.2, Numpy, Matplotlib, sci-kit learn
 ```
