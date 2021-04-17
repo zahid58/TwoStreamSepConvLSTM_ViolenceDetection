@@ -15,14 +15,16 @@ To get RWF2000 dataset,
 1. go to https://github.com/mchengny/RWF2000-Video-Database-for-Violence-Detection
 2. sign their agreement sheet to get the download link from them. 
 3. prepare the downloaded dataset like the following folder structure, 
-  📦project_directory
-    ┣ 📂RWF-2000
-      ┣ 📂train
-        ┣ 📂fight
-        ┣ 📂nonFight
-      ┣ 📂test
-        ┣ 📂fight
-        ┣ 📂nonFight
+
+📦project_directory
+  ┣ 📂RWF-2000
+    ┣ 📂train
+      ┣ 📂fight
+      ┣ 📂nonFight
+    ┣ 📂test
+      ┣ 📂fight
+      ┣ 📂nonFight
+      
 4. When you run *train.py* for the first time, pass the argument *--preprocessData*, this will uniformly sample 32 frames from each video, remove black borders and save them as *.npy* files. During the next times no need to pass *--preprocessData*, as you already have converted the videos into *.npy* files during the first time.
 
 Hockey and Movies dataset can be downloaded from this link https://drive.google.com/file/d/1-4yHiSzAzOz9L0EEbw58e-soZnlFEVpP/view?usp=sharing. Here we have already splitted the dataset and converted into .npy files. So, no need to pass *--preprocessData* while using Hockey and Movies dataset from the link above.
