@@ -1,5 +1,0 @@
-- remove convlstm2d in model
-
-
-- Tesla T4, compCap: 7.5
-- coreClock: 1.59Ghz, coreCount: 40, memory: 14.73 GiB
