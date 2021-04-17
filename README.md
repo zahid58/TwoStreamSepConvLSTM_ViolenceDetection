@@ -12,7 +12,7 @@
 
 ### Dataset preparation
 To get RWF2000 dataset,
-1. go to https://github.com/mchengny/RWF2000-Video-Database-for-Violence-Detection
+1. go to github.com/mchengny/RWF2000-Video-Database-for-Violence-Detection
 2. sign their agreement sheet to get the download link from them. 
 3. prepare the downloaded dataset like the following folder structure, 
 ```
