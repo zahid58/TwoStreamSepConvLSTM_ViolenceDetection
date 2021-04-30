@@ -10,6 +10,8 @@
 </p>
 -->
 
+This repository contains the codes for our paper [Efficient Two-Stream Network for Violence Detection Using Separable Convolutional LSTM](https://arxiv.org/abs/2102.10590) which is accepted to be presented at Int'l Joint Conference on Neural Networks (IJCNN) 2021. 
+
 ### Dataset preparation
 To get RWF2000 dataset,
 1. go to github.com/mchengny/RWF2000-Video-Database-for-Violence-Detection
