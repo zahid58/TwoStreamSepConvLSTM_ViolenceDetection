@@ -63,7 +63,7 @@ pip install -r requirements.txt
 ```
 
 ### Bibtex
-If you do use ideas from the paper in your research please kindly consider citing as below:
+If you do use ideas from the paper in your work please cite as below:
 ```
 @misc{islam2021efficient,
       title={Efficient Two-Stream Network for Violence Detection Using Separable Convolutional LSTM}, 
