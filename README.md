@@ -62,6 +62,22 @@ Python 3.7, Tensorflow 2.3.1, OpenCV 4.1.2, Numpy, Matplotlib, sci-kit learn
 pip install -r requirements.txt
 ```
 
+### Bibtex
+If you do use ideas from the paper in your research please kindly consider citing as below:
+```
+@misc{islam2021efficient,
+      title={Efficient Two-Stream Network for Violence Detection Using Separable Convolutional LSTM}, 
+      author={Zahidul Islam and Mohammad Rukonuzzaman and Raiyan Ahmed and Md. Hasanul Kabir and Moshiur Farazi},
+      year={2021},
+      eprint={2102.10590},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+```
+### License
+
+MIT License
+
 <!---
 ### Implementation
 #### Localization 
