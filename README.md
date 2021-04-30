@@ -76,9 +76,6 @@ If you do use ideas from the paper in your work please cite as below:
       primaryClass={cs.CV}
 }
 ```
-### License
-
-MIT License
 
 <!---
 ### Implementation
