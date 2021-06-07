@@ -120,7 +120,7 @@ def evaluate(args):
     optimizer = Adam(lr=4e-4, amsgrad=True)
     loss = 'binary_crossentropy'
     model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
-    model.load_weights(weightsPath).expect_partial()
+    model.load_weights(f'{weightsPath}').expect_partial()
     model.trainable = False
 
     # print('> Summary of the model : ')
@@ -156,7 +156,7 @@ def evaluate(args):
     print("> Test Accuracy:", test_results[1])
     print("====================")
     # save_as_csv(train_results, "", 'train_results.csv')
-    save_as_csv(test_results, "", 'test_results.csv')
+    save_as_csv(test_results, "", 'test_resuls.csv')
 
     #---------------------------------------------------
 
