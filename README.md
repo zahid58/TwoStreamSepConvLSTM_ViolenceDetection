@@ -51,7 +51,7 @@ python evaluate.py --dataset rwf2000 --vidLen 32 --batchSize 4 --mode both --lst
 this will save the results in *test_results.csv*.
 
 #### run evaluate.py on trained_models
-The trained models weigths are available in the drive folder [trained_models](https://drive.google.com/drive/folders/1igx-plktW069IgXyWg3H78AKuTg-jCza?usp=sharing). Copy the entire folder and its contents into the project directory. Then you can use the trained models like shown below.
+The trained models weigths are available in the drive folder [trained_models](https://drive.google.com/drive/folders/1igx-plktW069IgXyWg3H78AKuTg-jCza?usp=sharing). Copy the model you want to use into your project directory like shown below. Then you can evaluate the trained_model like below.
 
 ![trained_model_evaluate](https://github.com/Zedd1558/TwoStreamSepConvLSTM_ViolenceDetection/blob/master/imgs/3.png)
 
