@@ -90,10 +90,15 @@ def train(args):
 
     rwfPretrainedPath = args.rwfPretrainedPath
     if rwfPretrainedPath == "NOT_SET":
+        
         if lstm_type == "sepconv":
-            rwfPretrainedPath = "/gdrive/MyDrive/THESIS/Data/pretrainedModels/sepConvLSTM frame back suppress _ frame diff_89.25/rwf2000_best_val_acc_Model"
+            ###########################
+            # rwfPretrainedPath contains path to the model which is already trained on rwf2000 dataset. It is used to initialize training on hockey or movies dataset
+            # get this model from the trained_models google drive folder that I provided in readme 
+            ###########################
+            rwfPretrainedPath = "./trained_models/rwf2000_model/sepconvlstm-M/model/rwf2000_model"   # if you are using M model
         else:
-            rwfPretrainedPath = "/gdrive/MyDrive/THESIS/Data/pretrainedModels/attenSepConvLSTM frame back suppressed_frame diff/attenSepConvLSTMmodel/rwf2000_best_val_acc_Model"
+            pass
         
 
     resume_learning_rate = 5e-05   
