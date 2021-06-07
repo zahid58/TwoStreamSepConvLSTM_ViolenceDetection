@@ -164,12 +164,12 @@ def train(args):
             model =  model_function(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
             optimizer = Adam(lr=resume_learning_rate, amsgrad=True)
             model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
-            model.load_weights(currentModelPath)
+            model.load_weights(f'{currentModelPath}')
         elif  dataset == "hockey" or dataset == "movies":
             model =  model_function(size=input_frame_size, seq_len=vid_len,cnn_trainable=cnn_trainable, frame_diff_interval = frame_diff_interval, mode=mode, lstm_type=lstm_type)
             optimizer = Adam(lr=initial_learning_rate, amsgrad=True)
             model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
-            model.load_weights(currentModelPath)           
+            model.load_weights(f'{currentModelPath}')           
 
     print('> Summary of the model : ')
     model.summary(line_length=140)
