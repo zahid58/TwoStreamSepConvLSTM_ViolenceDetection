@@ -44,15 +44,26 @@ The training curves and history will be saved in *./results* and updated after e
 
 #### evaluate
 To evaluate an already trained model, use *evaluate.py* like below,
+
 ```
 python evaluate.py --dataset rwf2000 --vidLen 32 --batchSize 4 --mode both --lstmType sepconv --fusionType M --weightsPath PATH_TO_SAVED_MODEL
 ```
 this will save the results in *test_results.csv*.
 
-### trained_models
+#### run evaluate.py trained_models
 The trained models weigths are available in the drive folder [trained_models](https://drive.google.com/drive/folders/1igx-plktW069IgXyWg3H78AKuTg-jCza?usp=sharing). Copy the entire folder and its contents into the project directory. Then you can use the trained models like shown below.
+
+![trained_model_evaluate](http://url/to/3.png)
+
 ```
-path = "./trained_models/rwf2000_model/sepconvlstm-M/model" 
+python evaluate.py --dataset rwf2000 --vidLen 32 --batchSize 4 --mode both --lstmType sepconv --fusionType M --weightsPath "/content/violenceDetection/model/rwf2000_model"
+```
+
+#### loading trained_models weights inside script
+The trained models weigths are available in the drive folder [trained_models](https://drive.google.com/drive/folders/1igx-plktW069IgXyWg3H78AKuTg-jCza?usp=sharing). Copy the entire folder and its contents into the project directory. Then you can use the trained models like shown below.
+``` python
+path = "./trained_models/rwf2000_model/sepconvlstm-M/model/rwf2000_model"     
+# path = "./trained_models/movies/sepconvlstm-A/model/movies_model"   
 model =  models.getProposedModelM(...) # build the model
 model.load_weights(path) # load the weights
 ```
