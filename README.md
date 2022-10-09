@@ -29,10 +29,10 @@ To get RWF2000 dataset,
 ```
 4. When running *train.py* for the first time, pass the argument *--preprocessData*, this will uniformly sample 32 frames from each video, remove black borders and save them as *.npy* files. During the next times no need to pass the argument *--preprocessData*, as you already have converted the videos into *.npy* files during the first time.
 
-Hockey and Movies dataset can be downloaded from this link - 
-[Hockey_Movies_Preprocessed_Data](https://drive.google.com/file/d/1-4yHiSzAzOz9L0EEbw58e-soZnlFEVpP/view?usp=sharing)
-
-Here we have already splitted the dataset and converted into .npy files. So, no need to pass the argument *--preprocessData* while using Hockey and Movies dataset from the link above.
+Hockey and Movies dataset can be downloaded from these links - 
+[Hockey_Dataset](https://www.kaggle.com/datasets/yassershrief/hockey-fight-vidoes)
+[Movies_Dataset](https://academictorrents.com/details/70e0794e2292fc051a13f05ea6f5b6c16f3d3635)
+Then, preprocess the datasets in the same way as rwf2000 dataset.
 
 ### How to run
 #### train
