@@ -1,4 +1,4 @@
-[Sorry, this codebase is no longer maintained! There might be some bugs and missing drive links! But the codes would still be useful for building video recognition deep learning pipelines.]
+[Sorry, this codebase is no longer maintained! But the codes would still be useful for building video recognition deep learning pipelines. There might be some bugs and missing links to datasets (please collect data from the original source of these public datasets)!]
 
 <h1 align="center">
 <p><a href="https://arxiv.org/abs/2102.10590">Efficient Two-Stream Network for Violence Detection Using Separable Convolutional LSTM</a>
